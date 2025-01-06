@@ -3,6 +3,9 @@
 ### Prerequisites
 1. mne
 2. numpy
+3. pandas
+4. hmmlearn
+5. pyprep
 
 ### 2.1 Prepare Configuration
 The default training configuration in `./configs` folder of current folder should work.
@@ -53,3 +56,9 @@ A configuration file may seems like:
 + `preprocessings` specify a list of preprocessing methods. Currently, only serveral preprocessing methods are supported: `drop_channels`, `prep` and `asr`.
 + `extraction_process` specify the detailed training setting. It will respectively train from `number-microstate-least` microstates to `number-microstate-most` microstates. And stop at a certain $k$, $number-microstate-least\le  k \le number-microstate-most$, if the evaluation metrics (i.e., global explain variation) change less than `stop-threshold`. And one that exhibit the best GEV will be saved.
 When `store-microstates-n4` is enabled, even though the `4`-component microstates is not exhibit the best GEV, it will still be stored.
+
+## 2.2 Run the script
+```
+$ cd <path-to-2.microstate_training>
+$ python config-all-person-microstate --database_index_configuration ./configs/config-all-person-microstate.json
+```

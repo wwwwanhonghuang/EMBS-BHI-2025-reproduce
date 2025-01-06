@@ -23,7 +23,7 @@
         "post_merge_pipeline": [["average_reference", {}], ["min_max_nor", {}]]
     },
     "extraction_process":{
-        "dataset_base_path": "../../data",
+        "dataset_base_path": "../data/dataset",
         "database_name": "epileptic_eeg_dataset",
         "number-microstate-least": 4,
         "number-microstate-most": 4,
@@ -32,7 +32,7 @@
         "store-microstates-n4": true,
         "store-preprocessed": true,
         "store-segmentation": true,
-        "store-path": "../../data/microstates/epileptic_eeg_dataset/",
+        "store-path": "../data/microstates/epileptic_eeg_dataset/",
         "preprocessed_file_prefix": "[preprocessed_prep_asr]"
     }
 }

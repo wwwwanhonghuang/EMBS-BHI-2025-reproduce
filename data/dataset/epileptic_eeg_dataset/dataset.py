@@ -1,12 +1,11 @@
 import os, sys
-sys.path.append("../../dataset")
-sys.path.append("/home/huang/research/snn-seizure-prediction-research/data/sEEG/epileptic_eeg_dataset/")
 from dataset import BaseEEGDataset, MicrostateEnabledEEGDataset
-from utils import to_segment_sequence
+from dataset.experiment_utils import to_segment_sequence
 
 import mne
 import numpy as np
-from Preprocessing_Scripts.annotations import seizure_times, onset_times
+sys.path.append("..")
+from data.dataset.epileptic_eeg_dataset.annotations import seizure_times, onset_times
 
 class EpilepticEEGDataset(MicrostateEnabledEEGDataset):
     def __init__(self, dataset_base_path, dataset_info):

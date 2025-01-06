@@ -1,0 +1,8 @@
+{
+  "epileptic_eeg_dataset":
+  {
+    "class_name": "EpilepticEEGDataset",
+    "path": "./epileptic_eeg_dataset/",
+    "microstate_storage_base_path": "../data/microstates/epileptic_eeg_dataset"
+  }
+}

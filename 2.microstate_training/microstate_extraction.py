@@ -2,20 +2,22 @@ import numpy as np
 import mne
 import os, sys
 from datetime import datetime
-sys.path.append("../data")
-sys.path.append("/microstate_lib/code")
+sys.path.append("../lib")
+sys.path.append("../third_parts/microstate_lib/code")
 from dataset.dataset import *
 import eeg_recording
 import argparse
 import json
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-dic", "--database-index-configuration", default=None)
+parser.add_argument("-dic", "--database_index_configuration", default="./configs/config-all-person-microstate.json")
 args = parser.parse_args()
+
 with open(args.database_index_configuration) as f: 
         data = f.read() 
         record_configuration = json.loads(data)
         f.close()
+
 dataset_base_path = record_configuration['extraction_process']['dataset_base_path']
 dataset_name = record_configuration['extraction_process']['database_name']
 record_indexes = record_configuration['indexes']
