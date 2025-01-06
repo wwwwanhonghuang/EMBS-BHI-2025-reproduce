@@ -1,3 +1,6 @@
+[submodule "eeg_latent_space"]
+	path = third_parts/microstate_lib
+	url = https://github.com/jajcayn/eeg_latent_space.git
 [submodule "third_parts/microstate_lib"]
 	path = third_parts/microstate_lib
-	url = git@github.com:jajcayn/eeg_latent_space.git
+	url = https://github.com/jajcayn/eeg_latent_space.git
