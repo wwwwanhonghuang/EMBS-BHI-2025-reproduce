@@ -11,8 +11,8 @@
     "microstate_filename_form": "\\[seg\\-\\[prep\\-asr\\]\\]person_#{sid}_states4_gev_.*",
     "delay": 2,
     "n_states": 4,
-    "corpus_storage_base_path": "../../data/corpus/epileptic_eeg_dataset/recurrence",
-    "microstate_storage_base_path": "../../data/microstates/epileptic_eeg_dataset/",
+    "corpus_storage_base_path": "../data/recurrence_sentence/epileptic_eeg_dataset/",
+    "microstate_storage_base_path": "../data/microstates/epileptic_eeg_dataset/",
     "cut": [2, 800],
-    "dataset_base_path": "../../data"
+    "dataset_base_path": "../data/dataset"
 }

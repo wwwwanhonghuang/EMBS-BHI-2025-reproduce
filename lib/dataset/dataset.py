@@ -2,8 +2,9 @@ import numpy as np
 import mne
 import os, sys
 import json
-import importlib.util   
-from dataset.preprocessing import *
+import importlib.util
+sys.path.append('../data/lib')
+from preprocessing import *
 
 class BaseEEGDataset():
     def __init__(self, dataset_base_path, dataset_info, dataset_name):

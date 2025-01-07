@@ -1,10 +1,13 @@
 import os, sys
+sys.path.append("..")
+sys.path.append("../lib/dataset")
+
 from dataset import BaseEEGDataset, MicrostateEnabledEEGDataset
-from dataset.experiment_utils import to_segment_sequence
+from experiment_utils import to_segment_sequence
 
 import mne
 import numpy as np
-sys.path.append("..")
+
 from data.dataset.epileptic_eeg_dataset.annotations import seizure_times, onset_times
 
 class EpilepticEEGDataset(MicrostateEnabledEEGDataset):

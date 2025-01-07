@@ -1,4 +1,4 @@
-from scripts.phase_space_reconstruction.rp_segmentation_module import InfinitePhaseSpaceReonstructionBasedSegmentGenerator, FiniteTimeDelaySegmentGenerator, FiniteTimeDelayEEGSegmentGenerator
+from segmentation_module import InfinitePhaseSpaceReonstructionBasedSegmentGenerator, FiniteTimeDelaySegmentGenerator, FiniteTimeDelayEEGSegmentGenerator
 
 import numpy as np
 import re
@@ -11,10 +11,10 @@ sys.path.append("../data/dataset")
 sys.path.append("../lib/dataset")
 sys.path.append("../third_parts/microstate_lib/code")
 from dataset import *
-from utils import to_segment_sequence
+from experiment_utils import to_segment_sequence
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-cf", "--configuration-file", type=str, default="./configs/epilepsy_all_person_intergrated.json")
+parser.add_argument("-cf", "--configuration-file", type=str, default="./configs/epilepsy_dataset_phase_space_reconstruction.json")
 parser.add_argument("-i", "--index-only", type=bool, default=False)
 parser.add_argument("-of", "--out_splitted_fragments", type=bool, default=False)
 parser.add_argument("-om", "--out_integrated_fragments", type=bool, default=True)

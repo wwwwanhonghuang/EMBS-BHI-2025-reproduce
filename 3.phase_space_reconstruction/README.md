@@ -8,20 +8,23 @@ The default configuration file should work.
 ``` json
 {
     "dataset_name": "epileptic_eeg_dataset",
-    "sids": ["all"],
-    "merged_record_ids": [[[10, 1],[10, 2]],
-                          [[11, 1], [11, 2], [11, 3],[11,4]],
-			  [[12, 1], [12, 2]],
-			  [[13, 1], [13, 2], [13, 3], [13, 4]],
-			  [[14, 1]],
-			  [[15, 1], [15, 2], [15, 3], [15, 4]]],
+    "sids": [10, 11, 12, 13, 14, 15, "all"],
+    "merged_record_ids": [[[10, 1], [10, 2]], 
+        [[11, 1], [11, 2], [11, 3], [11, 4]], 
+        [[12, 1], [12, 2]], 
+        [[13, 1], [13, 2], [13, 3], [13, 4]], 
+        [[14, 1]],
+        [[15, 1], [15, 2], [15, 3], [15, 4]], 
+        [[10, 1], [10, 2], [11, 1], [11, 2], [11, 3], [12, 1], 
+         [12, 2], [13, 1], [13, 2], [13, 3], [13, 4], [14, 1], 
+         [15, 1], [15, 2], [15, 3], [15, 4]]],
     "microstate_filename_form": "\\[seg\\-\\[prep\\-asr\\]\\]person_#{sid}_states4_gev_.*",
     "delay": 2,
     "n_states": 4,
-    "corpus_storage_base_path": "../data/recurrence/epileptic_eeg_dataset/",
+    "corpus_storage_base_path": "../data/corpus/epileptic_eeg_dataset/recurrence",
     "microstate_storage_base_path": "../data/microstates/epileptic_eeg_dataset/",
-    "cut": [2, 4096],
-    "dataset_base_path": "../data/dataset"
+    "cut": [2, 800],
+    "dataset_base_path": "../data"
 }
 ```
 
@@ -31,6 +34,9 @@ The default configuration file should work.
 + `microstate_filename_form` store a regex specifies the name pattern of microstate file.
 + `delay` specify the embeded dimension used in phase space reconstruction. (the `delay` name should be changed in the future)
 + `cut` specify the minimal and maximal recurrence sentence length.
+
+Please kindly ensure microstate segmentation files are already generated from `2.microstate_training`, and exist in the folder specified by `microstate_storage_base_path` ^_^.
+
 
 ### 3.2 Run the script
 ```
