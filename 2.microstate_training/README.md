@@ -2,18 +2,19 @@
 
 ### 2.0 Prerequisites
 [Library Version in Development]
-1. mne == 1.7.1s
+1. mne == 1.7.1
 2. numpy == 1.26.4
 3. pandas == 2.2.2
 4. hmmlearn == 0.3.2
 5. pyprep == 0.4.3
 > [!CAUTION]
-> We modified the definition pyprep's `fit()` function to make the parameters for training can be passed explicitly.
-> Please kindly run `sh patch_prep.sh` after install `pyprep` to apply this patch.
-
+> We modified the definition pyprep's `fit()` and `reference()` function to make the parameters for training can be passed explicitly.
+> The scripts cannot work under original `pyprep` and will report exception like passed parameters more than require to the prep functions.
+> Please kindly run `sh patch_prep.sh` after install `pyprep` to apply this patch^.
+> The modification can be seen from the history of https://github.com/wwwwanhonghuang/pyprep, which is forked from https://github.com/sappelhoff/pyprep
 
 ### 2.1 Prepare Configuration
-The default training configuration in `./configs` folder of current folder should work.
+The **default training configuration** in `./configs` folder in current folder should work.
 For further development, this section provide the details of the configuration file
 A configuration file may seems like:
 ``` json
@@ -65,5 +66,7 @@ When `store-microstates-n4` is enabled, even though the `4`-component microstate
 ## 2.2 Run the script
 ```
 $ cd <path-to-2.microstate_training>
-$ python config-all-person-microstate --database_index_configuration ./configs/config-all-person-microstate.json
+$ python config-all-person-microstate.py
 ```
+The script utilize default configuration file `./configs/config-all-person-microstate.json`
+It can use `python config-all-person-microstate.py --database_index_configuration <path-to-config-file>`  to run with a specific configuration file.

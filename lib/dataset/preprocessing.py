@@ -29,11 +29,13 @@ class PreprocessingController():
         montage = mne.channels.make_standard_montage(kwargs.get("montage", "standard_1020"))
         pipeline = pyprep.PrepPipeline(mne_raw, kwargs.get("prep_params", {}), montage,
                                        ransac=kwargs.get("runsac", True))
-        pipeline.fit(kwargs.get("reference_args", {
-            "correlation_secs": 1.0, 
-            "correlation_threshold": 0.4, 
-            "frac_bad": 0.01
-        }))
+        pipeline.fit(
+            kwargs.get("reference_args", {
+                "correlation_secs": 1.0, 
+                "correlation_threshold": 0.4, 
+                "frac_bad": 0.01
+            })
+        )
         
     @classmethod
     def asr(cls, mne_raw, kwargs):
