@@ -12,6 +12,7 @@
 > The scripts cannot work under original `pyprep` and will report exception like passed parameters more than require to the prep functions.
 > Please kindly run `sh patch_prep.sh` after install `pyprep` to apply this patch^.
 > The modification can be seen from the history of https://github.com/wwwwanhonghuang/pyprep, which is forked from https://github.com/sappelhoff/pyprep
+6. asrpy == 0.0.3
 
 ### 2.1 Prepare Configuration
 The **default training configuration** in `./configs` folder in current folder should work.
