@@ -3,8 +3,10 @@ import mne
 import os, sys
 import json
 import importlib.util
+sys.path.append('../data/')
 sys.path.append('../data/lib')
-from preprocessing import *
+sys.path.append('../data/lib/dataset')
+from lib.dataset.preprocessing import *
 
 class BaseEEGDataset():
     def __init__(self, dataset_base_path, dataset_info, dataset_name):

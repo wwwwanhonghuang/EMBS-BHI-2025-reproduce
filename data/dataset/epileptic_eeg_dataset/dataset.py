@@ -62,6 +62,8 @@ class EpilepticEEGDataset(MicrostateEnabledEEGDataset):
                 start_n_time_offset = (time_offset[0] * 3600 + time_offset[1] * 60 + time_offset[0]) * freq
                 end_n_time_offset = start_n_time_offset + duration * freq
                 print(f"seizure of person_{index[0]}, record_{index[1]} from time step {start_n_time_offset} to {end_n_time_offset}")
+                assert(start_n_time_offset >= 0)
+                assert(end_n_time_offset >= 0)
                 seizures.append((prefix_total_n_time + start_n_time_offset, prefix_total_n_time + end_n_time_offset))
             prefix_total_n_time += length
         return seizures
