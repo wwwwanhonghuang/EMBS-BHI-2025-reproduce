@@ -1,6 +1,6 @@
 [submodule "third_parts/microstate_lib"]
 	path = third_parts/microstate_lib
 	url = https://github.com/jajcayn/eeg_latent_space.git
-[submodule "4.pcfg_training/pcfg-cky-inside-outside"]
-	path = 4.pcfg_training/pcfg-cky-inside-outside
+[submodule "lib/pcfg-cky-inside-outside"]
+	path = lib/pcfg-cky-inside-outside
 	url = git@github.com:wwwwanhonghuang/pcfg-cky-inside-outside.git
