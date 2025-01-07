@@ -1,11 +1,16 @@
 ## Step 2: Train Microstate Maps from Epileptic Dataset
 
-### Prerequisites
-1. mne
-2. numpy
-3. pandas
-4. hmmlearn
-5. pyprep
+### 2.0 Prerequisites
+[Library Version in Development]
+1. mne == 1.7.1s
+2. numpy == 1.26.4
+3. pandas == 2.2.2
+4. hmmlearn == 0.3.2
+5. pyprep == 0.4.3
+> [!CAUTION]
+> We modified the definition pyprep's `fit()` function to make the parameters for training can be passed explicitly.
+> Please kindly run `sh patch_prep.sh` after install `pyprep` to apply this patch.
+
 
 ### 2.1 Prepare Configuration
 The default training configuration in `./configs` folder of current folder should work.
