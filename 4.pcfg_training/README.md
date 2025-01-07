@@ -45,3 +45,14 @@ $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/
 
 ### 4.4 Phase Space Reconstruction
 Ensure setting up the `phase_convert` section in `4.pcfg_training\pcfg-cky-inside-outside\config.yaml`. The default one may work.
+```
+$ cd <repository-root>/lib\pcfg-cky-inside-outside>
+$ ./bin/phase_convert
+```
+
+### 4.5 Train PCFG
+```
+$ cd <repository-root>/lib\pcfg-cky-inside-outside>
+$ ./bin/main_executable
+```
+
