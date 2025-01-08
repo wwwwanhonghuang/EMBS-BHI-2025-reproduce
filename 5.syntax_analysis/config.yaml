@@ -1,0 +1,35 @@
+main:
+  grammar_file: "../../data/pcfg/grammar.pcfg"
+  input: "data/sentences_converted.txt"
+  log_intervals: 10000
+  log_path: "data/logs/"
+  log_f:
+    enabled: true
+    intervals: 10000
+  log_warning_in_training: false
+  batch_size_for_parameter_update: -1
+  split_data:
+    enabled: true
+    val_dataset_path: "../../data/recurrence_sentence/epileptic_eeg_dataset/validate_sentences.txt" 
+    train_dataset_path: "../../data/recurrence_sentence/epileptic_eeg_dataset/train_sentences.txt"
+    train_fraction: 0.8
+  n_epochs: 5
+  limit_n_sentences: -1
+
+phase_convert:
+  grammar_file: "data/pcfg/grammar.pcfg"
+  input: "../../data/epileptic_eeg_dataset/eeg_sentences.txt"
+  output: "../../data/epileptic_eeg_dataset/sentences_converted.txt"
+
+syntax_analysis:
+  grammar_file: "../../data/pcfg/grammar-trained.pcfg"
+  input: "../../data/pre-epileptic_integrated_all_d2_s4_converted.txt"
+  log_intervals: 1
+  log_path: "../../data/logs/pre-epileptic/"
+  report_path: "../../data/reports/pre-epileptic/"
+  serialize_to_files: false
+  tree_serialization_path: "../../data/serialized_tree/seizure/"
+
+test_parsing:
+  grammar_file: "../../data/pcfg/grammar-trained.pcfg"
+  input: "../../data/pre-epileptic_integrated_all_d2_s4_converted.txt"

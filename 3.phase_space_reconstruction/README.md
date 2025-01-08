@@ -36,7 +36,7 @@ The default configuration file should work.
 Please kindly ensure microstate segmentation files are already generated from `2.microstate_training`, and exist in the folder specified by `microstate_storage_base_path` ^_^.
 
 ### 3.2 Run the script
-```
+``` bash
 $ cd <path-to-3.phase_space_reconstruction>
 $ python dataset_splitting_and_segmentation.py --configuration-file ./configs/epilepsy_all_person_intergrated.json
 ```
@@ -49,7 +49,7 @@ running parameter. i.e., `python dataset_splitting_and_segmentation.py --configu
 
 We can also generate sentence for each person  and the integrated 'person' respectively.
 In this case, follow command should work
-```
+``` bash
 $ cd <path-to-3.phase_space_reconstruction>
 $ python dataset_splitting_and_segmentation.py --configuration-file ./configs/epilepsy_dataset_phase_space_reconstruction.json
 ```
