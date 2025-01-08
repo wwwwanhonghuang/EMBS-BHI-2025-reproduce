@@ -3,4 +3,4 @@
 	url = https://github.com/jajcayn/eeg_latent_space.git
 [submodule "lib/pcfg-cky-inside-outside"]
 	path = lib/pcfg-cky-inside-outside
-	url = git@github.com:wwwwanhonghuang/pcfg-cky-inside-outside.git
+	url = https://github.com/wwwwanhonghuang/pcfg-cky-inside-outside.git

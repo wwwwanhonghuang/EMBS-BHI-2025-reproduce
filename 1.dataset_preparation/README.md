@@ -1,6 +1,6 @@
 
 # 1. Dataset Preparation
-The epileptic dataset can be download from https://data.mendeley.com/datasets/5pc2j46cbc/1
+The Epileptic EEG Dataset [1] can be download from https://data.mendeley.com/datasets/5pc2j46cbc/1
 Or follow command may help:
 ```
 $ cd <path-to-1.dataset_preparation>

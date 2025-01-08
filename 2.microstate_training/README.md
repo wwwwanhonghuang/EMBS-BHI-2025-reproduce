@@ -11,7 +11,7 @@
 > We modified the definition pyprep's `fit()` and `reference()` function to make the parameters for training can be passed explicitly.
 > The scripts cannot work under original `pyprep` and will report exception like passed parameters more than require to the prep functions.
 > Please kindly run `sh patch_prep.sh` after install `pyprep` to apply this patch^.
-> The modification can be seen from the history of https://github.com/wwwwanhonghuang/pyprep, which is forked from https://github.com/sappelhoff/pyprep
+> The modification history can be seen from the history of https://github.com/wwwwanhonghuang/pyprep, which is forked from https://github.com/sappelhoff/pyprep
 6. asrpy == 0.0.3
 
 ### 2.1 Prepare Configuration
@@ -71,3 +71,4 @@ $ python config-all-person-microstate.py
 ```
 The script utilize default configuration file `./configs/config-all-person-microstate.json`
 It can use `python config-all-person-microstate.py --database_index_configuration <path-to-config-file>`  to run with a specific configuration file.
+

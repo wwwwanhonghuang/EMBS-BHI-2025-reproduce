@@ -73,7 +73,6 @@ from dataset.preprocessing import PreprocessingController
 preprocessed_file_prefix = \
     record_configuration['extraction_process'].get('preprocessed_file_prefix', '[preprocessed_prep_asr]')
 
-
 for person_index in record_indexes:
     print(f"Train microstates for person {person_index}")
     record_index_list = record_indexes[person_index]

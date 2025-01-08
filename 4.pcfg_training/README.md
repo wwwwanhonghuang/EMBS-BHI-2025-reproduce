@@ -1,7 +1,7 @@
 ## 4. PCFG Training
 ### 4.1  Build the project
 ```
-$ cd <path-to-4.pcfg_training\pcfg-cky-inside-outside>
+$ cd <repository_root/lib/pcfg-cky-inside-outside>
 $ cmake .
 $ make -j
 ```
@@ -9,6 +9,7 @@ $ make -j
 ### 4.2  Prepare the configuration
 In `<repository-root>/lib\pcfg-cky-inside-outside`, there is a `config.yaml` configuration file.
 The content should contains the `main` section seems like:
+
 ``` yaml
 main:
   grammar_file: "data/grammar.pcfg"
@@ -55,4 +56,3 @@ $ ./bin/phase_convert
 $ cd <repository-root>/lib\pcfg-cky-inside-outside>
 $ ./bin/main_executable
 ```
-
