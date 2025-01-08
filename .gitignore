@@ -4,3 +4,4 @@
 **/**.edf
 **/**.zip
 **/**/__pycache__
+.vscode

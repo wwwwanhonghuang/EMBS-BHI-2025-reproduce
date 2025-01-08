@@ -3,7 +3,7 @@
 ``` bash
 $ cd <repository_root/lib/pcfg-cky-inside-outside>
 $ cmake .
-$ make -j
+$ make train_pcfg -j
 ```
 
 ### 4.2  Prepare the configuration
@@ -44,15 +44,25 @@ $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/
 $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentence/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.txt
 ```
 
-### 4.4 Phase Space Reconstruction
-Ensure setting up the `phase_convert` section in `4.pcfg_training\pcfg-cky-inside-outside\config.yaml`. The default one may work.
+### 4.4 Encode dataset to Plain Sentences Form
+[4.3](./README.md#43-convert-npy-files-to-txt-files) generate the sentence, i.e., microstate sequences.
+
+Before training, we need convert the microstate sequence into correct word id, according a PCFG file.
+
+To do this, firstly, ensuring setting up the `phase_convert` section in configuration file `4.pcfg_training\pcfg-cky-inside-outside\config.yaml`. 
+The default configuration file should work^.
+
+Follow command line can then be used to generate correct form of sentences that match the grammar:
 ``` bash
-$ cd <repository-root>/lib\pcfg-cky-inside-outside>
-$ ./bin/phase_convert
+$ cd <repository-root>/lib/pcfg-cky-inside-outside>
+$ ./bin/phase_convert 4.pcfg_training/config_sentence_encoding_normal.yaml
 ```
 
 ### 4.5 Train PCFG
+Still we need prepare a configuration file.
+The default configuration file `4.pcfg_training/config_train.yaml` should work.
+
 ``` bash
-$ cd <repository-root>/lib\pcfg-cky-inside-outside>
-$ ./bin/main_executable
+$ cd <repository-root>/lib/pcfg-cky-inside-outside>
+$ ./bin/train_pcfg 4.pcfg_training/config_train.yaml
 ```

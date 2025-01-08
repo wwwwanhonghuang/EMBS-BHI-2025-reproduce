@@ -1,0 +1,9 @@
+syntax_analysis:
+  grammar_file: "../../data/pcfg/grammar-trained.pcfg"
+  input: "../../data/pre-epileptic_integrated_all_d2_s4_converted.txt"
+  log_intervals: 1000000
+  log_path: "../../data/logs/pre-epileptic/"
+  report_path: "../../data/reports/pre-epileptic/"
+  serialize_to_files: false
+  tree_serialization_path: "../../data/serialized_tree/pre-epileptic/"
+
