@@ -1,9 +1,11 @@
-import numpy as np
-import mne
 import os, sys
-from datetime import datetime
 sys.path.append("../lib")
 sys.path.append("../third_parts/microstate_lib/code")
+sys.path.append("../")
+from dataset.preprocessing import PreprocessingController
+import numpy as np
+import mne
+from datetime import datetime
 from dataset.dataset import *
 import eeg_recording
 import argparse
@@ -67,8 +69,6 @@ def store(maps, segmentation, gev, preprocessing_desc, person_id):
 
 montage_kind = "standard_1020"
 montage = mne.channels.make_standard_montage(montage_kind)
-sys.path.append("../")
-from dataset.preprocessing import PreprocessingController
 
 preprocessed_file_prefix = \
     record_configuration['extraction_process'].get('preprocessed_file_prefix', '[preprocessed_prep_asr]')
@@ -111,23 +111,29 @@ for person_index in record_indexes:
     
     recording = eeg_recording.SingleSubjectRecording("0", data)
 
-    #! --- microstate training
     print(f"Begin training microstates. Result will save in '{store_base_path}'")
     print(f" -- Search Microstate Amount from {microstate_search_range[0]} to {microstate_search_range[1]}")
+    
+    # GEV of training result of previous amount of microstates. 
     pre_gev_tot = 0
+    #! --- microstate training
     for n_states in range(microstate_search_range[0], microstate_search_range[1] + 1):
         print(f"Begin Training {n_states} microstates")
         recording.run_latent_kmeans(n_states = n_states, use_gfp = True, n_inits = n_iters)
-        if recording.latent_maps is None:
+        if recording.latent_maps is None: # No result.
             continue
         current_gev_tot = recording.gev_tot
         print(f'previous gev_tot = {pre_gev_tot}, current_gev_tot = {current_gev_tot}')
+        # early stop training larger amount of microstates,
+        # if GEV increment is smaller than threshold
         delta = current_gev_tot - pre_gev_tot
         if delta < stop_delta_threshold:
             break
+        
         if n_states == 4 and store_4_microstates:
             store(recording.latent_maps, recording.latent_segmentation, recording.gev_tot, "[prep-asr]", person_index)
         pre_gev_tot = current_gev_tot
-        print(f" -- n_states = {n_states}, gev_tot = {current_gev_tot}. --")
+        print(f" - n_states = {n_states}, gev_tot = {current_gev_tot}. --")
         
+    # store the best set of microstates, i.e., the last one.
     store(recording.latent_maps, recording.latent_segmentation, recording.gev_tot, record_configuration['save_prefix'], person_index)

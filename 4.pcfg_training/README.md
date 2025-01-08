@@ -37,14 +37,14 @@ This section setting the configuration for PCFG training.
 `n_epochs` specifies the numbers of epoches.
 `split_data` specifies the dataset splitting  parameters.
 
-### 4.3 Convert npy files to txt Files
+### 4.3 Convert npy form of microstate sequences to plain text form
 ``` bash
 $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/epileptic_eeg_dataset/seizure_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentence/epileptic_eeg_dataset/seizure_integrated_all_d2_s4.txt
 $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/epileptic_eeg_dataset/normal_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentence/epileptic_eeg_dataset/normal_integrated_all_d2_s4.txt
 $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentence/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.txt
 ```
 
-### 4.4 Encode dataset to Plain Sentences Form
+### 4.4 Convert microstate sequences to word sequences
 [4.3](./README.md#43-convert-npy-files-to-txt-files) generate the sentence, i.e., microstate sequences.
 
 Before training, we need convert the microstate sequence into correct word id, according a PCFG file.
