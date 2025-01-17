@@ -12,13 +12,14 @@ import argparse
 import json
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-dic", "--database_index_configuration", default="./configs/config-all-person-microstate.json")
+parser.add_argument("-dic", "--database_index_configuration", 
+    default="./configs/config-all-person-microstate.json")
 args = parser.parse_args()
 
 with open(args.database_index_configuration) as f: 
-        data = f.read() 
-        record_configuration = json.loads(data)
-        f.close()
+    data = f.read() 
+    record_configuration = json.loads(data)
+    f.close()
 
 dataset_base_path = record_configuration['extraction_process']['dataset_base_path']
 dataset_name = record_configuration['extraction_process']['database_name']

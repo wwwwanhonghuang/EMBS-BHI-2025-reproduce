@@ -116,12 +116,12 @@ for index, sid in enumerate(sids):
             segments = segment_generator.calculate_recurrent_segments()
         all_segments.append(segments)
         if args.out_splitted_fragments:
-            np.save(os.path.join(corpus_storage_base_path, f'seizure_{seizure_data_index}_{sid}_d{delay}_s{n_states}.npy.test'), np.array(segments, dtype='object'), allow_pickle=True)
+            np.save(os.path.join(corpus_storage_base_path, f'seizure_{seizure_data_index}_{sid}_d{delay}_s{n_states}.npy'), np.array(segments, dtype='object'), allow_pickle=True)
     if args.out_integrated_fragments:
         np.save(os.path.join(corpus_storage_base_path, 
-                    f'seizure_integrated_{sid}_d{delay}_s{n_states}.npy.test'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_segments , []), dtype='object'), 
+                    f'seizure_integrated_{sid}_d{delay}_s{n_states}.npy'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_segments , []), dtype='object'), 
                     allow_pickle=True)
-        print(f"out seizure_integrated_{sid}_d{delay}_s{n_states} Total {len(all_segments)} segments to {os.path.join(corpus_storage_base_path, f'seizure_integrated_{sid}_d{delay}_s{n_states}.npy.test')}")
+        print(f"out seizure_integrated_{sid}_d{delay}_s{n_states} Total {len(all_segments)} segments to {os.path.join(corpus_storage_base_path, f'seizure_integrated_{sid}_d{delay}_s{n_states}.npy')}")
     
     print("Proceeding normal fragments...")
     all_segments = []
@@ -133,10 +133,10 @@ for index, sid in enumerate(sids):
             segments = segment_generator.calculate_recurrent_segments()
         all_segments.append(segments)
         if args.out_splitted_fragments:
-            np.save(os.path.join(corpus_storage_base_path, f'normal_{seizure_data_index}_{sid}_d{delay}_s{n_states}.npy.test'), np.array(segments, dtype='object'), allow_pickle=True)
+            np.save(os.path.join(corpus_storage_base_path, f'normal_{seizure_data_index}_{sid}_d{delay}_s{n_states}.npy'), np.array(segments, dtype='object'), allow_pickle=True)
     if args.out_integrated_fragments:
         np.save(os.path.join(corpus_storage_base_path, 
-            f'normal_integrated_{sid}_d{delay}_s{n_states}.npy.test'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_segments , []), dtype='object'), 
+            f'normal_integrated_{sid}_d{delay}_s{n_states}.npy'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_segments , []), dtype='object'), 
                     allow_pickle=True)
     
     print("Proceeding pre-epileptic fragments...")
@@ -151,11 +151,11 @@ for index, sid in enumerate(sids):
         all_segments.append(segments)
         if args.out_splitted_fragments:
             np.save(os.path.join(corpus_storage_base_path, 
-                f'pre-epileptic_{seizure_data_index}_{sid}_d{delay}_s{n_states}.npy.test'), 
+                f'pre-epileptic_{seizure_data_index}_{sid}_d{delay}_s{n_states}.npy'), 
                 np.array(segments, dtype='object'), allow_pickle=True)
     
     if args.out_integrated_fragments:
         np.save(os.path.join(corpus_storage_base_path, 
-                    f'pre-epileptic_integrated_{sid}_d{delay}_s{n_states}.npy.test'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_segments , []), dtype='object'), 
+                    f'pre-epileptic_integrated_{sid}_d{delay}_s{n_states}.npy'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_segments , []), dtype='object'), 
                     allow_pickle=True)
 

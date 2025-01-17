@@ -67,8 +67,8 @@ When `store-microstates-n4` is enabled, even though the `4`-component microstate
 ## 2.2 Run the script
 ```
 $ cd <path-to-2.microstate_training>
-$ python config-all-person-microstate.py
+$ python microstate_extraction.py
 ```
 The script utilize default configuration file `./configs/config-all-person-microstate.json`
-It can use `python config-all-person-microstate.py --database_index_configuration <path-to-config-file>`  to run with a specific configuration file.
+It can use `python microstate_extraction.py --database_index_configuration <path-to-config-file>`  to run with a specific configuration file.
 

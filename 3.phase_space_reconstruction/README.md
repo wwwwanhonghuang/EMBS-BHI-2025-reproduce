@@ -51,5 +51,5 @@ We can also generate sentence for each person  and the integrated 'person' respe
 In this case, follow command should work
 ``` bash
 $ cd <path-to-3.phase_space_reconstruction>
-$ python dataset_splitting_and_segmentation.py --configuration-file ./configs/epilepsy_dataset_phase_space_reconstruction.json
+$ python dataset_splitting_and_segmentation.py --configuration-file ./configs/epilepsy_all_person_intergrated.json
 ```

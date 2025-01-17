@@ -2,6 +2,7 @@
 ### 4.1  Build the project
 ``` bash
 $ cd <repository_root/lib/pcfg-cky-inside-outside>
+$ git checkout master
 $ cmake .
 $ make train_pcfg -j
 ```
@@ -39,9 +40,9 @@ This section setting the configuration for PCFG training.
 
 ### 4.3 Convert npy form of microstate sequences to plain text form
 ``` bash
-$ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/epileptic_eeg_dataset/seizure_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentence/epileptic_eeg_dataset/seizure_integrated_all_d2_s4.txt
-$ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/epileptic_eeg_dataset/normal_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentence/epileptic_eeg_dataset/normal_integrated_all_d2_s4.txt
-$ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentence/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentence/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.txt
+$ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences/epileptic_eeg_dataset/seizure_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentences/epileptic_eeg_dataset/seizure_integrated_all_d2_s4.txt
+$ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences/epileptic_eeg_dataset/normal_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentences/epileptic_eeg_dataset/normal_integrated_all_d2_s4.txt
+$ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentences/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.txt
 ```
 
 ### 4.4 Convert microstate sequences to word sequences
@@ -54,8 +55,9 @@ The default configuration file should work^.
 
 Follow command line can then be used to generate correct form of sentences that match the grammar:
 ``` bash
-$ cd <repository-root>/lib/pcfg-cky-inside-outside>
-$ ./bin/phase_convert 4.pcfg_training/config_sentence_encoding_normal.yaml
+$ cd <repository-root>/lib/pcfg-cky-inside-outside
+$ make phase_convert
+$ ./bin/phase_convert ../../4.pcfg_training/config_sentence_encoding_normal.yaml
 ```
 
 ### 4.5 Train PCFG
@@ -63,6 +65,6 @@ Still we need prepare a configuration file.
 The default configuration file `4.pcfg_training/config_train.yaml` should work.
 
 ``` bash
-$ cd <repository-root>/lib/pcfg-cky-inside-outside>
-$ ./bin/train_pcfg 4.pcfg_training/config_train.yaml
+$ cd <repository-root>/lib/pcfg-cky-inside-outside
+$ ./bin/train_pcfg ../../4.pcfg_training/config_train.yaml
 ```
