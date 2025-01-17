@@ -95,6 +95,7 @@ for person_index in record_indexes:
                 preprocessing_name = preprocessing_pipeline_item[0]
                 preprocessing_arguments = preprocessing_pipeline_item[1]
                 PreprocessingController.preprocessing(data, preprocessing_name, preprocessing_arguments)
+                print(f"End of [Preprocessing {index}: {slice_begin // block_size + 1}/{int(np.ceil(data_count / block_size))}]... name = {preprocessing_pipeline_item[0]}")
             
             results.append(data)
         data = mne.concatenate_raws(results)
