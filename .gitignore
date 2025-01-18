@@ -5,3 +5,5 @@
 **/**.zip
 **/**/__pycache__
 .vscode
+data/train_sentences.txt
+data/recurrence_sentences
