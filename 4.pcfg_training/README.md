@@ -44,6 +44,8 @@ $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences
 $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences/epileptic_eeg_dataset/normal_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentences/epileptic_eeg_dataset/normal_integrated_all_d2_s4.txt
 $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentences/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.txt
 ```
+Or run the `convert_npy_to_plain_text.sh` script with command `sh convert_npy_to_plain_text.sh`.
+
 
 ### 4.4 Convert microstate sequences to word sequences
 [4.3](./README.md#43-convert-npy-files-to-txt-files) generate the sentence, i.e., microstate sequences.
