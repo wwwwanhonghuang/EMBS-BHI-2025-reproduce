@@ -83,6 +83,7 @@ for person_index in record_indexes:
     expect_preprocessed_file_path = 
         os.path.join(store_base_path, 
             f'{preprocessed_file_prefix}p{person_index}.edf')
+    
     if load_preprocessed and os.path.exists(expect_preprocessed_file_path):
         print(f"Load preprocessed data...")
         data = mne.io.read_raw(expect_preprocessed_file_path)
@@ -107,16 +108,15 @@ for person_index in record_indexes:
         data = mne.concatenate_raws(results)
         del results
         
-        for index, preprocessing_pipeline_item in enumerate(post_merge_pipeline):
-            print(f"[Post Merging Preprocessing {index}: {slice_begin // block_size + 1}/{int(np.ceil(data_count / block_size))}]... name = {preprocessing_pipeline_item[0]}")
-            preprocessing_name = preprocessing_pipeline_item[0]
-            preprocessing_arguments = preprocessing_pipeline_item[1]
-            PreprocessingController.preprocessing(data, preprocessing_name, preprocessing_arguments)
+        for index, postprocessing_pipeline_item in enumerate(post_merge_pipeline):
+            print(f"[Post Merging Preprocessing {index}: {slice_begin // block_size + 1}/{int(np.ceil(data_count / block_size))}]... name = {postprocessing_pipeline_item[0]}")
+            postprocessing_name = postprocessing_pipeline_item[0]
+            postprocessing_arguments = postprocessing_pipeline_item[1]
+            PostprocessingController.preprocessing(data, postprocessing_name, postprocessing_arguments)
         
         if save_preprocessed_data:
             mne.export.export_raw(expect_preprocessed_file_path, data, overwrite=True)
     
-
     # PART II: train microstates
     recording = eeg_recording.SingleSubjectRecording("0", data)
 
@@ -128,14 +128,15 @@ for person_index in record_indexes:
     
     # Train microstate sets with various numbers.
     for n_states in range(microstate_search_range[0], microstate_search_range[1] + 1):
-        print(f"Begin Training {n_states} microstates")
+        print(f"Begin training {n_states} microstates")
         recording.run_latent_kmeans(n_states = n_states, use_gfp = True, n_inits = n_iters)
         
         if recording.latent_maps is None: # No result.
             continue
         
         current_gev_tot = recording.gev_tot
-        print(f'previous gev_tot = {pre_gev_tot}, current_gev_tot = {current_gev_tot}')
+        print(f'previous gev_tot = {pre_gev_tot}, 
+            current_gev_tot = {current_gev_tot}')
         
         # Early stop training larger amount of microstates,
         # if GEV increment is smaller than threshold
@@ -145,9 +146,11 @@ for person_index in record_indexes:
         
         # Save size-4 microstate set if expected. 
         if n_states == 4 and store_4_microstates:
-            store(recording.latent_maps, recording.latent_segmentation, recording.gev_tot, "[prep-asr]", person_index)
+            store(recording.latent_maps, recording.latent_segmentation, recording.gev_tot, 
+                "[prep-asr]", person_index)
         pre_gev_tot = current_gev_tot
         print(f" - n_states = {n_states}, gev_tot = {current_gev_tot}. --")
         
     # store the best set of microstates, i.e., the last one.
-    store(recording.latent_maps, recording.latent_segmentation, recording.gev_tot, record_configuration['save_prefix'], person_index)
+    store(recording.latent_maps, recording.latent_segmentation, 
+        recording.gev_tot, record_configuration['save_prefix'], person_index)

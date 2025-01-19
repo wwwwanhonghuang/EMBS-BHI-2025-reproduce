@@ -11,10 +11,7 @@ sys.path.append("../lib/microstate_lib/code")
 from segmentation_module import InfinitePhaseSpaceReonstructionBasedSegmentGenerator, FiniteTimeDelaySegmentGenerator, FiniteTimeDelayEEGSegmentGenerator
 
 from lib.dataset.dataset import *
-
 from lib.dataset.experiment_utils import to_segment_sequence
-
-
 
 def build_recurrence_sentences(microstate_data, zone_type: str):
     print(f"Proceeding {zone_type} segments...")
@@ -100,7 +97,6 @@ def split_data(data, record_ids, sampling_frequency):
     print("Checks data length ==  total length of splitted fragments...Passed.")
 
     return splitted_data
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-cf", "--configuration-file", type=str, default="./configs/epilepsy_all_person_intergrated.json")
