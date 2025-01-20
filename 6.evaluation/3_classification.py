@@ -1,16 +1,16 @@
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import numpy as np
-from scipy.stats import entropy
 from tqdm import tqdm
-from sklearn.feature_selection import mutual_info_classif
 import pandas as pd
 import argparse
-import itertools
 import yaml
-import pandas as pd
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
+
+
 
 from sklearn.ensemble import RandomForestClassifier
 
@@ -21,8 +21,7 @@ from sklearn.metrics import (
     average_precision_score, hamming_loss, brier_score_loss, fbeta_score,
     precision_recall_curve, auc, fowlkes_mallows_score
 )
-import numpy as np
-import pandas as pd
+
 
 
 
@@ -50,7 +49,7 @@ def load_datasets_from_yaml(yaml_config, label_map = {'normal': 0, 'pre_epilepti
         pd.DataFrame: Combined DataFrame with a 'category' column.
     """
 
-    dataset_config = yaml_config.get("dataset_for_classification", {})
+    dataset_config = yaml_config.get("dataset_for_classification", {}).get("dataset", {})
     dataset = {}
     for category, file_paths in dataset_config.items():
         combined_data = []
@@ -73,7 +72,12 @@ def load_datasets_from_yaml(yaml_config, label_map = {'normal': 0, 'pre_epilepti
 
 def feature_filtering(dataset, select_features):
     for category in dataset:
-        dataset[category]['X'] = dataset[category]['X'][select_features]
+        # Ensure the 'Key' column exists and is being used for filtering
+        if 'Key' in dataset[category]['X'].columns:
+            # Filter based on 'Key' column matching the selected features
+            dataset[category]['X'] = dataset[category]['X'][dataset[category]['X']['Key'].isin(select_features)]
+        else:
+            print(f"Warning: 'Key' column not found in {category} category.")
     return dataset
 
 def integrate_dataset(dataset, selected_features):
@@ -109,9 +113,18 @@ def integrate_dataset(dataset, selected_features):
     # Convert the integrated data into a DataFrame
     return pd.DataFrame(integrated_data)
 
+# Define classifiers
+classifiers = {
+    "RandomForest": RandomForestClassifier(n_estimators=100),
+    "SVM": SVC(probability=True),
+    "KNN": KNeighborsClassifier(n_neighbors=5),
+    "LogisticRegression": LogisticRegression(max_iter=1000)
+}
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--output_folder", type=str, default="./out")
-parser.add_argument("--record_base_path", type=str, default="/data1")
+parser.add_argument("--record_base_path", type=str, 
+    default="../data/feature_records/0_clean_data")
 parser.add_argument("--configuration_file", type=str, default="./config.yaml")
 
 args = parser.parse_args()
@@ -121,9 +134,9 @@ configuration_file_path = args.configuration_file
 
 yaml_config = load_yaml_config(configuration_file_path)
 
-if not yaml_config['use_prepared_dataset']['enabled']:
+if not yaml_config['dataset_for_classification']['use_prepared_dataset']['enabled']:
     # load pareto optimal feature names.
-    pareto_optimal_feature_names = np.load(os.path.join(output_folder, "pareto_optimal_features.npy", allow_pickle=True))  
+    pareto_optimal_feature_names = np.load(os.path.join(output_folder, "pareto_optimal_features.npy"), allow_pickle=True)  
     print(f'Features Names = {pareto_optimal_feature_names}.')
 
     # load dataset
@@ -133,17 +146,24 @@ if not yaml_config['use_prepared_dataset']['enabled']:
     # integrate the dataset
     dataset = integrate_dataset(dataset, pareto_optimal_feature_names)
 else:
-    dataset = pd.read_csv(yaml_config['use_prepared_dataset']['dataset_path'])
+    dataset = pd.read_csv(yaml_config['dataset_for_classification']['use_prepared_dataset']['dataset_path'])
 
 # Training step 1: Prepare features and labels
-X = dataset.drop(columns=['id', 'pred'])
-y = dataset['pred']
+X = np.array(list(dataset.drop(columns=['id', 'pred'])['features']))
+y = np.array(dataset['pred'])
 
+# Find rows without NaN in X
+non_nan_indices = ~np.isnan(X).any(axis=1)
+
+# Keep only valid rows
+X = X[non_nan_indices]
+y = y[non_nan_indices]
 # K-fold cross-validation setup
-kf = StratifiedKFold(n_splits=yaml_config['n_splits'], shuffle=True)
+kf = StratifiedKFold(n_splits=yaml_config['dataset_for_classification']['n_splits'], 
+    shuffle=True)
 
 # Initialize result storage
-metrics = {
+metrics = {clf_name: {
     'accuracy': [],
     'precision': [],
     'recall': [],
@@ -158,44 +178,67 @@ metrics = {
     'f2_score': [],
     'pr_auc': [],
     'fmi': []
-}
+} for clf_name in classifiers.keys()}
 
-for train_index, test_index in kf.split(X, y):
-    X_train, X_test = X[train_index], X[test_index]
-    y_train, y_test = y[train_index], y[test_index]
+y[y == 2] = 1
 
-    model = RandomForestClassifier(n_estimators=100)
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    y_pred_prob = model.predict_proba(X_test)[:, 1] 
+for clf_name, clf in classifiers.items():
+    print(f"Training classifier: {clf_name}")
+    for train_index, test_index in kf.split(X, y):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        
+        # Train the model
+        clf.fit(X_train, y_train)
+        y_pred = clf.predict(X_test)
+        y_pred_prob = clf.predict_proba(X_test)[:, 1] if hasattr(clf, "predict_proba") else np.zeros_like(y_pred)
+        
+        # Compute metrics
+        metrics[clf_name]['accuracy'].append(accuracy_score(y_test, y_pred))
+        metrics[clf_name]['precision'].append(precision_score(y_test, y_pred, average='weighted'))
+        metrics[clf_name]['recall'].append(recall_score(y_test, y_pred, average='weighted'))
+        metrics[clf_name]['f1'].append(f1_score(y_test, y_pred, average='weighted'))
+        if hasattr(clf, "predict_proba"):
+            metrics[clf_name]['roc_auc'].append(roc_auc_score(y_test, y_pred_prob, multi_class='ovr'))
+            metrics[clf_name]['log_loss'].append(log_loss(y_test, y_pred_prob))
+            metrics[clf_name]['average_precision'].append(average_precision_score(y_test, y_pred_prob))
+            metrics[clf_name]['brier_score'].append(brier_score_loss(y_test, y_pred_prob))
+        metrics[clf_name]['mcc'].append(matthews_corrcoef(y_test, y_pred))
+        metrics[clf_name]['cohen_kappa'].append(cohen_kappa_score(y_test, y_pred))
+        metrics[clf_name]['hamming_loss'].append(hamming_loss(y_test, y_pred))
+        metrics[clf_name]['f2_score'].append(fbeta_score(y_test, y_pred, beta=2, average='weighted'))
+        
+        # Precision-Recall AUC
+        if hasattr(clf, "predict_proba"):
+            precision, recall, _ = precision_recall_curve(y_test, y_pred_prob)
+            pr_auc = auc(recall, precision)
+            metrics[clf_name]['pr_auc'].append(pr_auc)
+        
+        # Fowlkes-Mallows Index
+        metrics[clf_name]['fmi'].append(fowlkes_mallows_score(y_test, y_pred))
 
-    # Calculate all metrics
-    metrics['accuracy'].append(accuracy_score(y_test, y_pred))
-    metrics['precision'].append(precision_score(y_test, y_pred, average='weighted'))
-    metrics['recall'].append(recall_score(y_test, y_pred, average='weighted'))
-    metrics['f1'].append(f1_score(y_test, y_pred, average='weighted'))
-    metrics['roc_auc'].append(roc_auc_score(y_test, y_pred_prob))
-    metrics['mcc'].append(matthews_corrcoef(y_test, y_pred))
-    metrics['log_loss'].append(log_loss(y_test, y_pred_prob))
-    metrics['cohen_kappa'].append(cohen_kappa_score(y_test, y_pred))
-    metrics['average_precision'].append(average_precision_score(y_test, y_pred_prob))
-    metrics['hamming_loss'].append(hamming_loss(y_test, y_pred))
-    metrics['brier_score'].append(brier_score_loss(y_test, y_pred_prob))
-    metrics['f2_score'].append(fbeta_score(y_test, y_pred, beta=2, average='weighted'))
-    
-    # Precision-Recall AUC
-    precision, recall, _ = precision_recall_curve(y_test, y_pred_prob)
-    pr_auc = auc(recall, precision)
-    metrics['pr_auc'].append(pr_auc)
-    
-    # Fowlkes-Mallows Index
-    metrics['fmi'].append(fowlkes_mallows_score(y_test, y_pred))
+# Combine results into a DataFrame for each metric
+metrics_summary = {}
+for metric_name in list(metrics[list(classifiers.keys())[0]].keys()):
+    metric_data = {clf_name: np.mean(metrics[clf_name][metric_name]) for clf_name in classifiers.keys()}
+    metrics_summary[metric_name] = metric_data
 
-# Convert the results into a pandas DataFrame for easy analysis
-metrics_df = pd.DataFrame(metrics)
+# Convert to DataFrame for easier plotting
+metrics_df = pd.DataFrame(metrics_summary).T
 
-# Display the mean and std of all metrics
-print(metrics_df.mean())
-print(metrics_df.std())
-if yaml_config['save_evaluation_metrics_data']:
-    metrics_df.to_csv(os.path.join(output_folder, "metrics_df.csv"))
+# Save metrics
+np.save("metrics_summary.npy    ", metrics_summary, allow_pickle=True)
+metrics_df.to_csv(os.path.join(output_folder, "classification_metrics_comparison.csv"))
+print(metrics_df)
+
+# Plot metrics
+fig, ax = plt.subplots(figsize=(12, 8))
+metrics_df.plot(kind='bar', ax=ax)
+ax.set_title("Metrics Comparison Across Classifiers")
+ax.set_xlabel("Metrics")
+ax.set_ylabel("Score")
+ax.legend(title="Classifier", loc='upper right')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.savefig(os.path.join(output_folder, "classification_metrics_comparison.png"))
+plt.show()

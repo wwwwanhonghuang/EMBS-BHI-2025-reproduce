@@ -43,7 +43,7 @@ parser.add_argument("--kl_comparision_list", type=str, nargs="+", default=["norm
 parser.add_argument("--mi_evaluation_list", type=str, nargs="+", default=["normal", "seizures", "preepileptic"])
 
 parser.add_argument("--output_folder", type=str, default="./out")
-parser.add_argument("--record_base_path", type=str, default="/data1")
+parser.add_argument("--record_base_path", type=str, default="../data/feature_records/0_clean_data")
 
 args = parser.parse_args()
 record_base_path = args.record_base_path
@@ -51,22 +51,18 @@ output_folder = args.output_folder
 mi_evaluation_list = args.mi_evaluation_list
 kl_comparision_list = args.kl_comparision_list
 
-
-
 if not os.path.exists(record_base_path):
     raise FileNotFoundError(f"Base path '{record_base_path}' does not exist.")
 
-
 kl_record_files = \
-    {tuple(comparision_pair): np.load(os.path.join(output_folder, f"kl_values_{comparision_pair[0]}_{comparision_pair[1]}.npy", allow_pickle=True)).items()
+    {tuple(comparision_pair): np.load(os.path.join(output_folder, f"kl_values_{comparision_pair[0]}_{comparision_pair[1]}.npy"), allow_pickle=True).item()
                   for comparision_pair in itertools.combinations(args.kl_comparision_list, 2)}
 
 mi_record_files = \
-    np.load(os.path.join(output_folder, f"mi_values.npy"), allow_pickle=True).items()
-
-common_feature_names = set(mi_record_files[(mi_evaluation_list[0], mi_evaluation_list[1])].keys()) 
+    np.load(os.path.join(output_folder, f"mi_values.npy"), allow_pickle=True).item()
+common_feature_names = set(mi_record_files.keys()) 
 for key in mi_record_files:
-    common_feature_names &= set(mi_record_files[key].keys())
+    common_feature_names &= set(mi_record_files.keys())
 for key in kl_record_files:
     common_feature_names &= set(kl_record_files[key].keys())
     
@@ -79,14 +75,12 @@ integrared_result = {
 for feature_name in common_feature_names:
     integrared_result[feature_name] = {}
     values = []
-    for key in mi_record_files:
-        values.append(-mi_record_files[key][feature_name]) # for mutual information, bigger the better. However, KL distance is on the contraty. To maintain consistancy, we use negative mutual information.
+    values.append(-mi_record_files[feature_name].mean()) # for mutual information, bigger the better. However, KL distance is on the contraty. To maintain consistancy, we use negative mutual information.
     for key in kl_record_files:
-        values.append(kl_record_files[key][feature_name])
-    integrared_result[feature_name] = values
+        values.append(np.array(kl_record_files[key][feature_name]).mean())
+    integrared_result[feature_name] = np.array(values)
 
-    
-# TODO: find pareto optimal set of features from integrared_result.
+
 pareto_optimal_features = find_pareto_optimal_set(integrared_result)
 print(f"Pareto Optimal Features: {pareto_optimal_features}")
-np.save(os.path.join(output_folder, "pareto_optimal_features.npy", pareto_optimal_features, allow_pickle=True))
+np.save(os.path.join(output_folder, "pareto_optimal_features.npy"), pareto_optimal_features, allow_pickle=True)

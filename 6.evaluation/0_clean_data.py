@@ -4,6 +4,7 @@ import seaborn as sns
 import re
 from tqdm import tqdm
 import os
+import argparse
 
 def span_length_k_keys(code, k):
     pattern = r'pre_(\d+)_end_(\d+)'
@@ -18,28 +19,39 @@ def is_span_length_less_equal_than_k_or_non_span(code, k):
     match = re.match(pattern, code)
     if match:
         num1, num2 = map(int, match.groups())  # Extract and convert to integers
-        return num2 - num1 + 1 <= k  # Check if second number is first + k
+        return num2 - num1 + 1 <= k 
     return True
 
-base_path = "/data1/feature_records/"
-file_lists = [file_name for file_name in os.listdir(base_path) if re.match(r'.*_data[a-z0-9\.]*csv', file_name) is not None] 
+parser = argparse.ArgumentParser()
+parser.add_argument("--record_path", type=str, default="../data/feature_records/")
+parser.add_argument("--output_path", type=str, default="../data/feature_records/0_clean_data")
+args = parser.parse_args()
+record_path = args.record_path
+output_path = args.output_path
+
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+
+args = parser.parse_args()
+file_lists = [file_name for file_name in os.listdir(record_path) 
+              if re.match(r'.*_data[a-z0-9\.]*csv', file_name) is not None] 
 print(f'files: {file_lists}')
 
-
-
-def process_file(file, base_path, MAX_K=3):
-    record_file_path = os.path.join(base_path, file)
+def process_file(file, MAX_K=3):
+    record_file_path = os.path.join(record_path, file)
     data = pd.read_csv(record_file_path, sep=',')
     
     # Filter out spans with length greater than MAX_K initially
     filtered_df = data[data['Key'].apply(lambda x: is_span_length_less_equal_than_k_or_non_span(x, MAX_K))]
-    print(f"Filtered df length (span <= {MAX_K}): {len(filtered_df)}")
+    filtered_df = filtered_df[~filtered_df['Key'].apply(lambda x: span_length_k_keys(x, 1))]
+
+    print(f"Filtered df length (remain span <= {MAX_K}): {len(filtered_df)}")
 
     # Create a new DataFrame to store the results
     new_rows = []
 
     # Loop over k values to generate and insert average rows
-    for k in range(2, MAX_K):
+    for k in range(2, MAX_K + 1):
         # Filter rows matching the `pre_xxx_end_xxx` pattern
         pre_end_rows = filtered_df[filtered_df['Key'].apply(lambda x: span_length_k_keys(x, k))]
 
@@ -57,18 +69,19 @@ def process_file(file, base_path, MAX_K=3):
 
         # Now, remove all rows that match the pattern `pre_xxx_end_xxx`
         filtered_df = filtered_df[~filtered_df['Key'].apply(lambda x: span_length_k_keys(x, k))]
-
+        
         print(f"New df length after removing span_{k} rows: {len(filtered_df)}")
+
 
     # Concatenate all new rows into a single DataFrame and add them back to the original
     final_df = pd.concat([filtered_df] + new_rows, ignore_index=True)
     
     # Save the resulting DataFrame to a new CSV file
-    final_df.to_csv(os.path.join(base_path, f'converted_{file}'), index=False)
+    final_df.to_csv(os.path.join(output_path, f'converted_{file}'), index=False)
     print(f"Processed and saved {file}.")
     feature_names = final_df.Key.unique()
     for feature_name in feature_names:
         print(f'feature: {feature_name}')
 
 for file in tqdm(file_lists):
-    process_file(file, base_path)
+    process_file(file)

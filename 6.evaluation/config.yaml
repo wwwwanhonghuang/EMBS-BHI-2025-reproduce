@@ -1,17 +1,11 @@
 dataset_for_classification:
-  normal:
-    - "/data1/feature_record/normal_data.1.csv"
-    - "/data1/feature_record/normal_data.2.csv"
-    - "/data1/feature_record/normal_data.3.csv"
-    - "/data1/feature_record/normal_data.4.csv"
-    - "/data1/feature_record/normal_data.5.csv"
-    - "/data1/feature_record/normal_data.6.csv"
-    - "/data1/feature_record/normal_data.7.csv"
-    - "/data1/feature_record/normal_data.8.csv"
-  pre_epileptic:
-    - "/data1/feature_record/preepileptic_data.csv"
-  seizure:
-    - "/data1/feature_record/seizure_data.csv"
+  dataset:
+    normal:
+      - "../data/feature_records/0_clean_data/converted_subset_normal_data.csv"
+    pre_epileptic:
+      - "../data/feature_records/0_clean_data/converted_subset_preepileptic_data.csv"
+    seizure:
+      - "../data/feature_records/0_clean_data/converted_subset_seizures_data.csv"
   use_prepared_dataset:
     enabled: false
     dataset_path: ""
