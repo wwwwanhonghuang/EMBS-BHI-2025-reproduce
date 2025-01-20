@@ -7,3 +7,4 @@
 .vscode
 data/train_sentences.txt
 data/recurrence_sentences
+**/**/.ipynb_checkpoints/
