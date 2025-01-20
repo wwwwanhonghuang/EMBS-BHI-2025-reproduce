@@ -12,6 +12,20 @@ import itertools
 import yaml
 import pandas as pd
 
+from sklearn.ensemble import RandomForestClassifier
+
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import (
+    accuracy_score, precision_score, recall_score, f1_score, roc_auc_score,
+    confusion_matrix, matthews_corrcoef, log_loss, cohen_kappa_score,
+    average_precision_score, hamming_loss, brier_score_loss, fbeta_score,
+    precision_recall_curve, auc, fowlkes_mallows_score
+)
+import numpy as np
+import pandas as pd
+
+
+
 def load_yaml_config(yaml_file):
     """
     Load a YAML configuration file.
@@ -105,73 +119,86 @@ record_base_path = args.record_base_path
 output_folder = args.output_folder
 configuration_file_path = args.configuration_file
 
-# 1. load pareto optimal feature names.
-pareto_optimal_feature_names = np.load(os.path.join(output_folder, "pareto_optimal_features.npy", allow_pickle=True))  
-print(f'Features Names = {pareto_optimal_feature_names}.')
-
-# 2. load dataset
 yaml_config = load_yaml_config(configuration_file_path)
-dataset = load_datasets_from_yaml(yaml_config)
-feature_filtering(dataset, pareto_optimal_feature_names)
 
-# 3. Integrate the dataset
-dataset = integrate_dataset(dataset, pareto_optimal_feature_names)
+if not yaml_config['use_prepared_dataset']['enabled']:
+    # 1. load pareto optimal feature names.
+    pareto_optimal_feature_names = np.load(os.path.join(output_folder, "pareto_optimal_features.npy", allow_pickle=True))  
+    print(f'Features Names = {pareto_optimal_feature_names}.')
 
+    # 2. load dataset
+    dataset = load_datasets_from_yaml(yaml_config)
+    feature_filtering(dataset, pareto_optimal_feature_names)
 
-from sklearn.metrics import (precision_score, recall_score, f1_score, accuracy_score,
-                             classification_report, confusion_matrix, roc_curve, auc,
-                             precision_recall_curve, average_precision_score, matthews_corrcoef,
-                             log_loss, brier_score_loss, hamming_loss)
+    # 3. Integrate the dataset
+    dataset = integrate_dataset(dataset, pareto_optimal_feature_names)
+else:
+    dataset = pd.read_csv(yaml_config['use_prepared_dataset']['dataset_path'])
 
-# Step 1: Prepare features and labels
-X = dataset.drop(columns=['instance_id', 'pred'])
+# Training step 1: Prepare features and labels
+X = dataset.drop(columns=['id', 'pred'])
 y = dataset['pred']
 
-# Step 2: Split the dataset
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Assuming `X` (features) and `y` (labels) are your dataset and targets
+# X, y = your_data.features, your_data.labels
 
-# Step 3: Train the classifier
-classifier = RandomForestClassifier(n_estimators=100, random_state=42)
-classifier.fit(X_train, y_train)
+# k-fold cross-validation setup
+kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-# Step 4: Predictions
-y_pred = classifier.predict(X_test)
+# Initialize result storage
+metrics = {
+    'accuracy': [],
+    'precision': [],
+    'recall': [],
+    'f1': [],
+    'roc_auc': [],
+    'mcc': [],
+    'log_loss': [],
+    'cohen_kappa': [],
+    'average_precision': [],
+    'hamming_loss': [],
+    'brier_score': [],
+    'f2_score': [],
+    'pr_auc': [],
+    'fmi': []
+}
 
-# Step 5: Metrics Evaluation
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print("Classification Report:")
-print(classification_report(y_test, y_pred))
+for train_index, test_index in kf.split(X, y):
+    X_train, X_test = X[train_index], X[test_index]
+    y_train, y_test = y[train_index], y[test_index]
 
-precision = precision_score(y_test, y_pred, average='weighted')
-recall = recall_score(y_test, y_pred, average='weighted')
-f1 = f1_score(y_test, y_pred, average='weighted')
-mcc = matthews_corrcoef(y_test, y_pred)
+    model = RandomForestClassifier(n_estimators=100)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    y_pred_prob = model.predict_proba(X_test)[:, 1] 
 
-print(f'Precision (Weighted): {precision}')
-print(f'Recall (Weighted): {recall}')
-print(f'F1 Score (Weighted): {f1}')
-print(f'MCC: {mcc}')
+    # Calculate all metrics
+    metrics['accuracy'].append(accuracy_score(y_test, y_pred))
+    metrics['precision'].append(precision_score(y_test, y_pred, average='weighted'))
+    metrics['recall'].append(recall_score(y_test, y_pred, average='weighted'))
+    metrics['f1'].append(f1_score(y_test, y_pred, average='weighted'))
+    metrics['roc_auc'].append(roc_auc_score(y_test, y_pred_prob))
+    metrics['mcc'].append(matthews_corrcoef(y_test, y_pred))
+    metrics['log_loss'].append(log_loss(y_test, y_pred_prob))
+    metrics['cohen_kappa'].append(cohen_kappa_score(y_test, y_pred))
+    metrics['average_precision'].append(average_precision_score(y_test, y_pred_prob))
+    metrics['hamming_loss'].append(hamming_loss(y_test, y_pred))
+    metrics['brier_score'].append(brier_score_loss(y_test, y_pred_prob))
+    metrics['f2_score'].append(fbeta_score(y_test, y_pred, beta=2, average='weighted'))
+    
+    # Precision-Recall AUC
+    precision, recall, _ = precision_recall_curve(y_test, y_pred_prob)
+    pr_auc = auc(recall, precision)
+    metrics['pr_auc'].append(pr_auc)
+    
+    # Fowlkes-Mallows Index
+    metrics['fmi'].append(fowlkes_mallows_score(y_test, y_pred))
 
-# ROC Curve and AUC
-fpr, tpr, _ = roc_curve(y_test, classifier.predict_proba(X_test)[:, 1])
-roc_auc = auc(fpr, tpr)
-print(f'AUC: {roc_auc}')
+# Convert the results into a pandas DataFrame for easy analysis
+metrics_df = pd.DataFrame(metrics)
 
-# Precision-Recall Curve and AUC
-precision, recall, _ = precision_recall_curve(y_test, classifier.predict_proba(X_test)[:, 1])
-pr_auc = average_precision_score(y_test, classifier.predict_proba(X_test)[:, 1])
-print(f'Precision-Recall AUC: {pr_auc}')
-
-# Log Loss
-logloss = log_loss(y_test, classifier.predict_proba(X_test))
-print(f'Log Loss: {logloss}')
-
-# Brier Score
-brier_score = brier_score_loss(y_test, classifier.predict_proba(X_test)[:, 1])
-print(f'Brier Score: {brier_score}')
-
-# Confusion Matrix
-conf_matrix = confusion_matrix(y_test, y_pred)
-print(f'Confusion Matrix:\n{conf_matrix}')
-
-
+# Display the mean and std of all metrics
+print(metrics_df.mean())
+print(metrics_df.std())
+if yaml_config['save_evaluation_metrics_data']:
+    metrics_df.to_csv(os.path.join(output_folder, "metrics_df.csv"))
