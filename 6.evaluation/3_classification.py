@@ -122,15 +122,15 @@ configuration_file_path = args.configuration_file
 yaml_config = load_yaml_config(configuration_file_path)
 
 if not yaml_config['use_prepared_dataset']['enabled']:
-    # 1. load pareto optimal feature names.
+    # load pareto optimal feature names.
     pareto_optimal_feature_names = np.load(os.path.join(output_folder, "pareto_optimal_features.npy", allow_pickle=True))  
     print(f'Features Names = {pareto_optimal_feature_names}.')
 
-    # 2. load dataset
+    # load dataset
     dataset = load_datasets_from_yaml(yaml_config)
     feature_filtering(dataset, pareto_optimal_feature_names)
 
-    # 3. Integrate the dataset
+    # integrate the dataset
     dataset = integrate_dataset(dataset, pareto_optimal_feature_names)
 else:
     dataset = pd.read_csv(yaml_config['use_prepared_dataset']['dataset_path'])
@@ -139,11 +139,8 @@ else:
 X = dataset.drop(columns=['id', 'pred'])
 y = dataset['pred']
 
-# Assuming `X` (features) and `y` (labels) are your dataset and targets
-# X, y = your_data.features, your_data.labels
-
-# k-fold cross-validation setup
-kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+# K-fold cross-validation setup
+kf = StratifiedKFold(n_splits=yaml_config['n_splits'], shuffle=True)
 
 # Initialize result storage
 metrics = {

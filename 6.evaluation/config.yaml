@@ -12,3 +12,8 @@ dataset_for_classification:
     - "/data1/feature_record/preepileptic_data.csv"
   seizure:
     - "/data1/feature_record/seizure_data.csv"
+  use_prepared_dataset:
+    enabled: false
+    dataset_path: ""
+  save_evaluation_metrics_data: true
+  n_splits: 5
