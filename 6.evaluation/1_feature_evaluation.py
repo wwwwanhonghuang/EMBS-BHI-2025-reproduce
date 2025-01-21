@@ -11,7 +11,7 @@ import argparse
 import itertools
 
 
-def sample_and_compute_mutual_info(featre_records, feature_name, sample_size=1000, n_iterations=10, evaluation_items=['normal', 'seizures']):
+def sample_and_compute_mutual_info(featre_records, feature_name, sample_size=1000, n_iterations=10, evaluation_items=['normal', 'seizures', "preepileptic"]):
     def select_and_sample_feature_data(category, feature_name):
         data = featre_records[category][featre_records[category].Key == feature_name]
         return data.sample(n=min(sample_size, len(data)))
@@ -29,8 +29,8 @@ def sample_and_compute_mutual_info(featre_records, feature_name, sample_size=100
             y += [index] * len(values)
         mi = compute_mutual_information_continuous_discrete(X, y)
         mi_values.append(np.mean(mi))
-        
-    return np.mean(mi_values)
+    
+    return mi_values
 
 def compute_mutual_information_continuous_discrete(X, y):
     # X: Continuous feature(s) (dataframe or array)
@@ -95,57 +95,179 @@ def load_and_sample(featre_records, feature_name, sample_size=1000):
 
     return sampled_data
 
-def plot_kl_divergence_bar(kl_values, comparision_pair):
-    # Prepare the data for plotting
-    keys = list(kl_values.keys())  # List of keys (features)
-    means = [np.mean(kl_values[key]) for key in keys]  # Mean KL divergence for each key
-    stds = [np.std(kl_values[key]) for key in keys]  # Standard deviation for each key
-    print(keys)
-    # Create the bar plot with error bars
-    plt.figure(figsize=(10, 6))
-    plt.bar(keys, means, yerr=stds, color='blue', label="KL Divergence")
+def plot_kl_divergence_bar(all_kl_values, categories):
+    kl_components = {category: np.array([all_kl_values[feature_name][category] for feature_name in all_kl_values.keys()]) for category in categories} 
+    all_category_means = {category: np.mean(kl_components[category], axis=2) for category in categories}
+    all_category_stds = {category: np.std(kl_components[category], axis=2) for category in categories}
+
+    # Create the stacked bar plot with error bars
+    _, ax = plt.subplots(figsize=(36, 32))
+    cmap = plt.cm.viridis
+    color_palette = cmap(np.linspace(0, 1, len(all_kl_values.keys())))# plt.cm.tab10.colors  
+    offset = 0.36
+
+    for category_index, category in enumerate(categories):
+        # print(sorted(zip(means, keys, range(len(means)))))
+       
+        means = all_category_means[category]
+        stds = all_category_stds[category]
+        for index, (_, feature_name, feature_id) in enumerate(sorted(zip(means, all_kl_values.keys(), range(len(means))), reverse=True)):
+            # Assign a unique color to each feature based on its index
+            color = color_palette[feature_id % len(color_palette)]  # Ensure we don't run out of colors
+            x_position = category_index * 11 - offset * index  # Shift each bar slightly to the right
+            # Overlap bars with a slight transparency (alpha)
+            ax.bar(x_position, means[feature_id], bottom=0,
+                color=color, alpha=0.7, yerr=stds[feature_id], capsize=2)
+            
+            # Update the last_bar position for the next iteration
+            if category_index == 0:
+                ax.plot([x_position, x_position - 2], [means[feature_id], means[feature_id]], color=color, linewidth=2)
+                ax.plot([x_position - 2, x_position - 2], [means[feature_id], means[feature_id] + 2], color=color, linewidth=2)
+
+                ax.text(x_position - 2 - 0.02, means[feature_id] + 2, feature_name, ha='right', va='center', fontsize=10, color='black', rotation=90)
+
     
     # Labeling the plot
-    plt.xlabel('Feature Name')
-    plt.ylabel('KL Divergence')
-    plt.title(f'{comparision_pair[0]}-{comparision_pair[1]} Feature KL Divergence Plot')
-    plt.xticks(rotation=45)  # Rotate x-axis labels if necessary for better readability
-    plt.legend()
-    plt.tight_layout()  # To ensure the plot is properly adjusted
+    ax.set_xticks([])
+    x_ticks_labels = categories
+    ax.set_xticks([11 * i + len(all_kl_values.keys()) * offset / 2 - 10 for i in range(len(categories))])
+    ax.set_xticklabels(x_ticks_labels, rotation=0, fontsize=36)
+    ax.tick_params(axis='both', which='major', labelsize=28)
     
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
 
-def plot_mi_divergence_bar(mutual_information_values):
-    keys = list(mutual_information_values.keys())  # List of keys (features)
-    means = [np.mean(mutual_information_values[key]) for key in keys]  # Mean KL divergence for each key
-    stds = [np.std(mutual_information_values[key]) for key in keys]  # Standard deviation for each key
+    ax.set_ylabel('KL Divergence', fontsize=36)
+    ax.legend()
 
-    # Create the bar plot with error bars
-    plt.figure(figsize=(10, 6))
-    plt.bar(keys, means, yerr=stds, capsize=5, color='blue', label="Mutual Information")
+    plt.tight_layout()
+
+def plot_mi_divergence_bar(mutual_information_values, categories):    
+    mi_components = {category: np.array([mutual_information_values[feature_name][category] for feature_name in mutual_information_values.keys()]) for category in categories}  # Extract the MI components
+    
+    all_category_means = {category: np.mean(mi_components[category], axis=2) for category in categories}
+    
+    all_category_stds = {category: np.std(mi_components[category], axis=2) for category in categories}
+
+    # Create the stacked bar plot with error bars
+    fig, ax = plt.subplots(figsize=(36, 32))
+
+    color_palette = plt.cm.tab10.colors  
+    offset = 0.36
+    for category_index, category in enumerate(categories):
+        # print(sorted(zip(means, keys, range(len(means)))))
+       
+        means = all_category_means[category]
+        stds = all_category_stds[category]
+        for index, (feature_value, feature_name, feature_id) in enumerate(sorted(zip(means, mutual_information_values.keys(), range(len(means))), reverse=True)):
+            # Assign a unique color to each feature based on its index
+            color = color_palette[feature_id % len(color_palette)]  # Ensure we don't run out of colors
+            x_position = category_index * 11 - offset * index  # Shift each bar slightly to the right
+            # Overlap bars with a slight transparency (alpha)
+            ax.bar(x_position, means[feature_id], bottom=0,
+                color=color, alpha=0.7, yerr=stds[feature_id], capsize=2)
+            
+            # Update the last_bar position for the next iteration
+            if category_index == 0:
+                ax.plot([x_position, x_position - 2], [means[feature_id], means[feature_id]], color=color, linewidth=2)
+                ax.plot([x_position - 2, x_position - 2], [means[feature_id], means[feature_id] + 0.1], color=color, linewidth=2)
+
+                ax.text(x_position - 2 - 0.02, means[feature_id] + 0.1, feature_name, ha='right', va='center', fontsize=10, color='black', rotation=90)
+
     
     # Labeling the plot
-    plt.xlabel('Feature Name')
-    plt.ylabel('Mutual Information')
-    plt.title('Feature-Prediction Mutual Information Plot')
-    plt.xticks(rotation=45)  # Rotate x-axis labels if necessary for better readability
-    plt.legend()
-    plt.tight_layout()  # To ensure the plot is properly adjusted
+    ax.set_xticks([])
+    x_ticks_labels = categories
+    ax.set_xticks([11 * i + len(mutual_information_values.keys()) * offset / 2 - 7 for i in range(len(categories))])
+    ax.set_xticklabels(x_ticks_labels, rotation=0, fontsize=36)
+    ax.tick_params(axis='both', which='major', labelsize=28)
+    
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--save_kl", type=bool, default=True)
-parser.add_argument("--save_mi", type=bool, default=True)
-parser.add_argument("--kl_comparision_list", type=str, nargs="+", default=["normal", "seizures", "preepileptic"])
-parser.add_argument("--mi_evaluation_list", type=str, nargs="+", default=["normal", "seizures", "preepileptic"])
-parser.add_argument("--output_folder", type=str, default="./out")
-parser.add_argument("--record_base_path", type=str, default="../data/feature_records/0_clean_data")
-parser.add_argument("--sample_size", type=int, default=1000)
+    ax.set_ylabel('Mutual Information', fontsize=36)
+    ax.legend()
 
-args = parser.parse_args()
+    plt.tight_layout()
+    
+    
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--save_kl", type=bool, default=True)
+    parser.add_argument("--save_mi", type=bool, default=True)
+    parser.add_argument("--kl_comparision_list", type=str, nargs="+", default=["normal", "seizures", "preepileptic"])
+    parser.add_argument("--mi_evaluation_list", type=str, nargs="+", default=["normal", "seizures", "preepileptic"])
+    parser.add_argument("--output_folder", type=str, default="./out")
+    parser.add_argument("--record_base_path", type=str, default="../data/feature_records/0_clean_data")
+    parser.add_argument("--sample_size", type=int, default=1000)
+
+    args = parser.parse_args()
+    return args
+
+
+
+def process_KL_values():
+    all_kl_values = {
+        
+    }
+
+    for comparision_pair in kl_comparision_pairs:
+        print(f'2. Evaluate KL-divergence between features. (compare = {comparision_pair})')
+        catrgory = f'{comparision_pair[0]}-{comparision_pair[1]}'
+        for feature_name in tqdm(common_feature_names):
+            print(f'feature_name = {feature_name}')
+            if feature_name not in all_kl_values:
+                all_kl_values[feature_name] = {}
+            if catrgory not in  all_kl_values[feature_name]:
+                all_kl_values[feature_name][catrgory] = []
+                
+            samples = sample_and_compute_kl(featre_records, feature_name, 
+                sample_size=sample_size, n_iterations=10, comparision_pair=comparision_pair)
+            all_kl_values[feature_name][catrgory].append(samples)
+    return all_kl_values
+
+
+
+def _init_mutual_information_value_plot_category(mutual_information_values, feature_name, category_name):
+    if category_name not in mutual_information_values[feature_name]:
+        mutual_information_values[feature_name][category_name] = []
+
+
+def process_mutual_information():
+    for feature_name in tqdm(common_feature_names):
+        print(f'feature_name = {feature_name}')
+        if feature_name not in mutual_information_values:
+            mutual_information_values[feature_name] = {}
+        
+        evaluation_list_map = {
+            'All': ["normal", "seizures", "preepileptic"],
+            'Normal-Seizures': ["normal", "seizures"], 
+            'Normal-Pre_epileptic': ["normal", "preepileptic"], 
+            'Seizures-Pre_epileptic': ["seizures", "preepileptic"]
+        }
+        for category in categories:
+            _init_mutual_information_value_plot_category(mutual_information_values, feature_name, category)
+
+        for category in categories:
+            samples = sample_and_compute_mutual_info(featre_records, 
+                feature_name, sample_size=sample_size, n_iterations=10, evaluation_items=evaluation_list_map[category])
+            mutual_information_values[feature_name][category].append(samples)
+            
+    return mutual_information_values
+
+
+args = parse_args()
 record_base_path = args.record_base_path
 output_folder = args.output_folder
 save_KL = args.save_kl
 save_MI = args.save_mi
 sample_size = args.sample_size
+
+kl_comparision_pairs = list(itertools.combinations(args.kl_comparision_list, 2))
+categories = ['All', 'Normal-Seizures', 'Normal-Pre_epileptic', 'Seizures-Pre_epileptic']
+
 
 print(f"record_base_path = {record_base_path}")
 print(f"output_folder = {output_folder}")
@@ -166,34 +288,20 @@ for features in unique_feature_names[1:]:
 
 print(f'\t - Evaluate features = {common_feature_names}.\n')
 
-# for comparision_pair in itertools.combinations(args.kl_comparision_list, 2):
-#     print(f'2. Evaluate KL-divergence between features. (compare = {comparision_pair})')
-#     kl_values = {}
-#     for feature_name in tqdm(common_feature_names):
-#         print(f'feature_name = {feature_name}')
-#         kl_values |= {feature_name: sample_and_compute_kl(featre_records, feature_name, sample_size=sample_size, n_iterations=10, comparision_pair=comparision_pair) for key in feature_name}
+all_kl_values = process_KL_values()
+if save_KL:
+    np.save(os.path.join(output_folder, f"all_kl_values.npy"), all_kl_values, allow_pickle = True)
 
-#     if save_KL:
-#         np.save(os.path.join(output_folder, f"kl_values_{comparision_pair[0]}_{comparision_pair[1]}.npy"), kl_values, allow_pickle = True)
+plot_kl_divergence_bar(all_kl_values, [f'{pair[0]}-{pair[1]}' for pair in kl_comparision_pairs])
+plt.savefig(os.path.join(output_folder, f"feature_kl-divergence_comparision.pdf"))
 
-#     plot_kl_divergence_bar(kl_values, comparision_pair)
-#     plt.savefig(os.path.join(output_folder, 
-#         f"feature_kl-divergence_compare_{comparision_pair[0]}_{comparision_pair[1]}.svg"))
-    
-
-print(f'3. Evaluate KL-divergence between features.')
+print(f'3. Evaluate mutual information between features and classification labels.')
 mutual_information_values = {}
-for feature_name in tqdm(common_feature_names):
-    print(f'feature_name = {feature_name}')
-    mutual_information_values |= \
-        {feature_name: sample_and_compute_mutual_info(featre_records, 
-            feature_name, sample_size=sample_size, n_iterations=10, evaluation_items=args.mi_evaluation_list)}
-            
 
+mutual_information_values = process_mutual_information()
 if save_MI:
-    np.save(os.path.join(output_folder, 
-        f"mi_values.npy"), mutual_information_values, allow_pickle = True)
+    np.save(os.path.join(output_folder, f"mi_values.npy"), 
+            mutual_information_values, allow_pickle = True)
 
-plot_mi_divergence_bar(mutual_information_values)
-plt.savefig(os.path.join(output_folder, 
-    f'feature_prediction_mi.svg'))
+plot_mi_divergence_bar(mutual_information_values, categories)
+plt.savefig(os.path.join(output_folder, f'feature_prediction_mi.pdf'))

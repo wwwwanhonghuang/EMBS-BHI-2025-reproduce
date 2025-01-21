@@ -35,7 +35,8 @@ if not os.path.exists(output_path):
 args = parser.parse_args()
 file_lists = [file_name for file_name in os.listdir(record_path) 
               if re.match(r'.*_data[a-z0-9\.]*csv', file_name) is not None] 
-print(f'files: {file_lists}')
+
+print(f'Files: {file_lists}')
 
 def process_file(file, MAX_K=3):
     record_file_path = os.path.join(record_path, file)
