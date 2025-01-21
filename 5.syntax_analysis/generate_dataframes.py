@@ -3,6 +3,8 @@ import os, sys
 from tqdm import tqdm
 import re
 import pandas as pd
+import argparse
+import yaml
 
 def parse_file(file_path):
     """
@@ -34,12 +36,26 @@ def parse_file(file_path):
     df = pd.DataFrame(parsed_data.items(), columns=["Key", "Value"])
     return df
 
-data_folder = "../data"
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--configuration_file_path", type=str, default="dataframe_generation_configuration.yaml")
+args = parser.parse_args()
+configuration_path = args.configuration_file_path
+with open(configuration_path, "r") as file:
+    configuration = yaml.safe_load(file)
+
+base_path = configuration["base_path"]
+print(f"Base Path: {base_path}")
+
+
 report_base_path = {
-    "seizures": os.path.join(data_folder, "reports", "seizures"),
-    "normal": os.path.join(data_folder, "reports", "normal"),
-    "pre-epileptic": os.path.join(data_folder, "reports", "pre-epileptic"),
 }
+
+dataset_info = configuration["dataset"]
+
+for item in dataset_info:
+    print(f"Name: {item['name']}, Path: {item['path']}")
+    report_base_path[item['name']] = os.path.join(base_path, item['path'])
 
 def integrate_and_save_dataframe_data(reports, save_path="/data1/"):
     dataframes = reports

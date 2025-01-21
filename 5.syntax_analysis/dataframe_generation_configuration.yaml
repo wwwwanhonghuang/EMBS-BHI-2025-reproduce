@@ -1,0 +1,13 @@
+base_path: "/data1/pcfg-logs"
+
+dataset:
+  - name: "normal_test"
+    path: "normal_test"
+  - name: "normal_train"
+    path: "normal_train"
+  - name: "normal_validation"
+    path: "normal_validation"
+  - name: "preepileptic"
+    path: "preepileptic"
+  - name: "seizure"
+    path: "seizure"
