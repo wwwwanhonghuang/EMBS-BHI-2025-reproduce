@@ -1,6 +1,4 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import re
 from tqdm import tqdm
 import os
@@ -22,23 +20,8 @@ def is_span_length_less_equal_than_k_or_non_span(code, k):
         return num2 - num1 + 1 <= k 
     return True
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--record_path", type=str, default="../data/feature_records/")
-parser.add_argument("--output_path", type=str, default="../data/feature_records/0_clean_data")
-args = parser.parse_args()
-record_path = args.record_path
-output_path = args.output_path
 
-if not os.path.exists(output_path):
-    os.makedirs(output_path)
-
-args = parser.parse_args()
-file_lists = [file_name for file_name in os.listdir(record_path) 
-              if re.match(r'.*_data[a-z0-9\.]*csv', file_name) is not None] 
-
-print(f'Files: {file_lists}')
-
-def process_file(file, MAX_K=3):
+def process_file(file, MAX_K=10):
     record_file_path = os.path.join(record_path, file)
     data = pd.read_csv(record_file_path, sep=',')
     
@@ -73,7 +56,6 @@ def process_file(file, MAX_K=3):
         
         print(f"New df length after removing span_{k} rows: {len(filtered_df)}")
 
-
     # Concatenate all new rows into a single DataFrame and add them back to the original
     final_df = pd.concat([filtered_df] + new_rows, ignore_index=True)
     
@@ -82,7 +64,24 @@ def process_file(file, MAX_K=3):
     print(f"Processed and saved {file}.")
     feature_names = final_df.Key.unique()
     for feature_name in feature_names:
-        print(f'feature: {feature_name}')
+        print(f'Feature: {feature_name}')
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--record_path", type=str, default="../data/feature_records/")
+parser.add_argument("--output_path", type=str, default="../data/feature_records/0_clean_data")
+args = parser.parse_args()
+record_path = args.record_path
+output_path = args.output_path
+
+if not os.path.exists(output_path):
+    os.makedirs(output_path)
+
+args = parser.parse_args()
+file_lists = [file_name for file_name in os.listdir(record_path) 
+              if re.match(r'.*_data[a-z0-9\.]*csv', file_name) is not None] 
+
+print(f'Files: {file_lists}')
 
 for file in tqdm(file_lists):
     process_file(file)

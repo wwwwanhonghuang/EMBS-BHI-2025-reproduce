@@ -1,6 +1,5 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import os
 import numpy as np
 from scipy.stats import entropy
@@ -9,7 +8,7 @@ from sklearn.feature_selection import mutual_info_classif
 import pandas as pd
 import argparse
 import itertools
-
+from utils import load_yaml_config
 
 def sample_and_compute_mutual_info(featre_records, feature_name, sample_size=1000, n_iterations=10, evaluation_items=['normal', 'seizures', "preepileptic"]):
     def select_and_sample_feature_data(category, feature_name):
@@ -38,7 +37,6 @@ def compute_mutual_information_continuous_discrete(X, y):
     mi = mutual_info_classif(np.array(X).reshape(-1, 1), np.array(y))
     return mi
 
-
 def calculate_kl_divergence(p, q):
     # Ensure both distributions have the same length (e.g., padding with zeros if necessary)
     # p and q are histograms or probability mass functions
@@ -64,23 +62,44 @@ def sample_and_compute_kl(featre_records, feature_name, sample_size=1000, n_iter
     
     return kl_values
 
-def read_feature_csv_files(feature_files):
-    featre_records = {'normal':[], 'seizures':[], 'preepileptic':[]}
-    for file in feature_files:
-        print(f'read file "{file}')
-        entry = None
-        if file.find("normal") >= 0:
-            entry = "normal"
-        elif file.find("seizures") >= 0:
-            entry = "seizures"
-        elif file.find("preepileptic") >= 0:
-            entry = "preepileptic"
+def read_feature_csv_files(feature_files, record_base_path):
+    """
+    Reads feature CSV files and organizes them into categories.
+
+    Parameters:
+        feature_files (dict): A dictionary with keys as categories (e.g., 'normal', 'seizures') 
+                              and values as lists of filenames for each category.
+        record_base_path (str): The base directory where the files are stored.
+
+    Returns:
+        dict: A dictionary containing concatenated dataframes for each category.
+    """
+    feature_records = {'normal': [], 'seizures': [], 'preepileptic': []}
+    
+    # Iterate through the categories
+    for category in feature_records:
+        files = feature_files.get(category, [])
+        for file in files:
+            print(f'Reading file "{file}" for category "{category}"...')
+            file_path = os.path.join(record_base_path, file)
+            
+            # Check if file exists before reading
+            if not os.path.exists(file_path):
+                print(f"Warning: File '{file}' does not exist. Skipping...")
+                continue
+
+            # Append the dataframe to the list for the current category
+            feature_records[category].append(pd.read_csv(file_path))
+        
+        # Concatenate all dataframes for the category (if any files were found)
+        if feature_records[category]:
+            feature_records[category] = pd.concat(feature_records[category], ignore_index=True)
         else:
-            raise KeyError
-        featre_records[entry].append(pd.read_csv(os.path.join(record_base_path, file)))
-    for key in featre_records:
-        featre_records[key] = pd.concat(featre_records[key])
-    return featre_records
+            print(f"No files were loaded for category '{category}'.")
+            feature_records[category] = pd.DataFrame() 
+    
+    return feature_records
+
 
 def load_and_sample(featre_records, feature_name, sample_size=1000):
     # Sample from the 'normal' category for a specific key value
@@ -123,9 +142,7 @@ def plot_kl_divergence_bar(all_kl_values, categories):
             if category_index == 0:
                 ax.plot([x_position, x_position - 2], [means[feature_id], means[feature_id]], color=color, linewidth=2)
                 ax.plot([x_position - 2, x_position - 2], [means[feature_id], means[feature_id] + 2], color=color, linewidth=2)
-
                 ax.text(x_position - 2 - 0.02, means[feature_id] + 2, feature_name, ha='right', va='center', fontsize=10, color='black', rotation=90)
-
     
     # Labeling the plot
     ax.set_xticks([])
@@ -192,7 +209,6 @@ def plot_mi_divergence_bar(mutual_information_values, categories):
 
     plt.tight_layout()
     
-    
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_kl", type=bool, default=True)
@@ -206,37 +222,34 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
-
-def process_KL_values():
+def process_KL_values(feature_records, feature_names, kl_comparision_pairs, sample_size=1000, n_iterations=10):
     all_kl_values = {
         
     }
 
     for comparision_pair in kl_comparision_pairs:
         print(f'2. Evaluate KL-divergence between features. (compare = {comparision_pair})')
-        catrgory = f'{comparision_pair[0]}-{comparision_pair[1]}'
-        for feature_name in tqdm(common_feature_names):
+        category = f'{comparision_pair[0]}-{comparision_pair[1]}'
+        for feature_name in tqdm(feature_names):
             print(f'feature_name = {feature_name}')
             if feature_name not in all_kl_values:
                 all_kl_values[feature_name] = {}
-            if catrgory not in  all_kl_values[feature_name]:
-                all_kl_values[feature_name][catrgory] = []
+            if category not in  all_kl_values[feature_name]:
+                all_kl_values[feature_name][category] = []
                 
-            samples = sample_and_compute_kl(featre_records, feature_name, 
-                sample_size=sample_size, n_iterations=10, comparision_pair=comparision_pair)
-            all_kl_values[feature_name][catrgory].append(samples)
+            samples = sample_and_compute_kl(feature_records, feature_name, 
+                sample_size=sample_size, n_iterations=n_iterations, comparision_pair=comparision_pair)
+            all_kl_values[feature_name][category].append(samples)
     return all_kl_values
-
-
 
 def _init_mutual_information_value_plot_category(mutual_information_values, feature_name, category_name):
     if category_name not in mutual_information_values[feature_name]:
         mutual_information_values[feature_name][category_name] = []
 
 
-def process_mutual_information():
-    for feature_name in tqdm(common_feature_names):
+def process_mutual_information(feature_records, feature_names, 
+                               mutual_information_values, sample_size=1000, n_iterations=10):
+    for feature_name in tqdm(feature_names):
         print(f'feature_name = {feature_name}')
         if feature_name not in mutual_information_values:
             mutual_information_values[feature_name] = {}
@@ -251,44 +264,51 @@ def process_mutual_information():
             _init_mutual_information_value_plot_category(mutual_information_values, feature_name, category)
 
         for category in categories:
-            samples = sample_and_compute_mutual_info(featre_records, 
-                feature_name, sample_size=sample_size, n_iterations=10, evaluation_items=evaluation_list_map[category])
+            samples = sample_and_compute_mutual_info(feature_records, 
+                feature_name, sample_size=sample_size, n_iterations=n_iterations, 
+                evaluation_items=evaluation_list_map[category])
             mutual_information_values[feature_name][category].append(samples)
             
     return mutual_information_values
 
-
 args = parse_args()
-record_base_path = args.record_base_path
-output_folder = args.output_folder
-save_KL = args.save_kl
-save_MI = args.save_mi
-sample_size = args.sample_size
+config = load_yaml_config("config.yaml")['feature_evaluation']
+record_base_path = config['record_base_path']
+output_folder = config['output_folder']
+save_KL = config['save_KL']
+save_MI = config['save_MI']
+sample_size = config['sample_size']
 
 kl_comparision_pairs = list(itertools.combinations(args.kl_comparision_list, 2))
 categories = ['All', 'Normal-Seizures', 'Normal-Pre_epileptic', 'Seizures-Pre_epileptic']
 
-
 print(f"record_base_path = {record_base_path}")
 print(f"output_folder = {output_folder}")
 
-feature_files = [file_name for file_name in os.listdir(record_base_path) if 
-                 file_name[-4:] == '.csv' and file_name[:9] == "converted"]
-
+feature_files = config["files"]
 if not os.path.exists(record_base_path):
     raise FileNotFoundError(f"Base path '{record_base_path}' does not exist.")
 
 print(f'1. Read feature records...')
+print(feature_files)
 
-featre_records = read_feature_csv_files(feature_files)
-unique_feature_names = [featre_records[key]['Key'].unique() for key in featre_records]
-common_feature_names = set(unique_feature_names[0]) 
+
+feature_records = read_feature_csv_files(feature_files, record_base_path)
+unique_feature_names = [
+    set(feature_records[category]['Key'].unique()) 
+    for category in feature_records
+]
+common_feature_names = unique_feature_names[0]
 for features in unique_feature_names[1:]:
-    common_feature_names &= set(features)
+    common_feature_names &= features  # Intersection of sets
 
-print(f'\t - Evaluate features = {common_feature_names}.\n')
+print(f'\t - Common features = {common_feature_names}.\n')
 
-all_kl_values = process_KL_values()
+
+# sample_size is the sample size of dataset utilize in KL calculations. 
+# `n_iterations`` equal the amount of samples of KL calculation.
+all_kl_values = process_KL_values(feature_records=feature_records, feature_names=common_feature_names, 
+                                  kl_comparision_pairs=kl_comparision_pairs, sample_size=sample_size, n_iterations=100)
 if save_KL:
     np.save(os.path.join(output_folder, f"all_kl_values.npy"), all_kl_values, allow_pickle = True)
 
@@ -296,9 +316,11 @@ plot_kl_divergence_bar(all_kl_values, [f'{pair[0]}-{pair[1]}' for pair in kl_com
 plt.savefig(os.path.join(output_folder, f"feature_kl-divergence_comparision.pdf"))
 
 print(f'3. Evaluate mutual information between features and classification labels.')
+
 mutual_information_values = {}
 
-mutual_information_values = process_mutual_information()
+mutual_information_values = process_mutual_information(feature_records=feature_records, feature_names=common_feature_names,
+        mutual_information_values=mutual_information_values, sample_size=sample_size, n_iterations=100)
 if save_MI:
     np.save(os.path.join(output_folder, f"mi_values.npy"), 
             mutual_information_values, allow_pickle = True)

@@ -1,4 +1,4 @@
-base_path: "/data1/pcfg-logs"
+base_path: "/data1/pcfg-logs/reports"
 
 dataset:
   - name: "normal_test"

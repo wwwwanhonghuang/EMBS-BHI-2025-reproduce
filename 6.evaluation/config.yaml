@@ -1,3 +1,32 @@
+data_set_splitting:
+  record_base_path: "/data1/feature_records/0_clean_data"
+  retrain_ratio: 0.6
+  files:
+    - "converted_seizure_data.csv"
+    - "converted_preepileptic_data.csv" 
+  output_folder: "/data1/feature_records/0_clean_data"
+
+feature_evaluation:
+  sample_size: 5000
+  save_KL: true
+  save_MI: true
+  record_base_path: "/data1/feature_records/0_clean_data"
+  output_folder: "./out"
+  files:
+    normal:
+      - "converted_normal_train_data.1.csv"
+      - "converted_normal_train_data.2.csv"
+      - "converted_normal_train_data.3.csv"
+      - "converted_normal_train_data.4.csv"
+      - "converted_normal_train_data.5.csv"
+      - "converted_normal_train_data.6.csv"
+      - "converted_normal_train_data.7.csv"
+      - "converted_validation_data.csv"
+    seizures:
+      - "use_in_feature_evaluation_converted_seizure_data.csv"
+    preepileptic:
+      - "use_in_feature_evaluation_converted_preepileptic_data.csv"
+
 dataset_for_classification:
   dataset:
     normal:

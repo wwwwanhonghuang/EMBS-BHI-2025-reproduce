@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 import pandas as pd
 import argparse
-import yaml
+from utils import load_yaml_config
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
@@ -24,19 +24,6 @@ from sklearn.metrics import (
 
 
 
-
-def load_yaml_config(yaml_file):
-    """
-    Load a YAML configuration file.
-
-    Args:
-        yaml_file (str): Path to the YAML file.
-    
-    Returns:
-        dict: Parsed YAML data as a Python dictionary.
-    """
-    with open(yaml_file, 'r') as file:
-        return yaml.safe_load(file)
 
 def load_datasets_from_yaml(yaml_config, label_map = {'normal': 0, 'pre_epileptic': 1, 'seizure': 2}):
     """
