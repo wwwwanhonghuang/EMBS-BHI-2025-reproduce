@@ -1,5 +1,5 @@
 main:
-  grammar_file: "../../data/pcfg/grammar_log_partition_1_epoch_3.pcfg"
+  grammar_file: "../../data/pcfg/grammar_log_partition_1_epoch_9.pcfg"
   input:  "../../data/recurrence_sentences/epileptic_eeg_dataset/validate_sentences.txt"
   log_intervals: -1
   log_path: "data/logs/"
