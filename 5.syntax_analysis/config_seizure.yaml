@@ -1,8 +1,11 @@
 syntax_analysis:
   grammar_file: "../../data/pcfg/grammar-trained.pcfg"
-  input: "../../data/seizure_integrated_all_d2_s4_converted.txt"
-  log_intervals: 1000000
+  input: "../../data/recurrence_sentences/epileptic_eeg_dataset/seizure_integrated_all_d2_s4_converted.txt"
+  log_intervals: -1
   log_path: "../../data/logs/seizure/"
   report_path: "../../data/reports/seizure/"
-  serialize_to_files: false
+  report_statistics: false
+  serialize_to_files: true
   tree_serialization_path: "../../data/serialized_tree/seizure/"
+  sentence_from: -1
+  sentence_to: -1

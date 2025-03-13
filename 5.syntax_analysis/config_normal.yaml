@@ -1,9 +1,12 @@
 syntax_analysis:
   grammar_file: "../../data/pcfg/grammar-trained.pcfg"
-  input: "../../data/normal_integrated_all_d2_s4_converted.txt"
+  input: "../../data/recurrence_sentences/epileptic_eeg_dataset/normal_integrated_all_d2_s4_converted.txt"
   log_intervals: 1000000
   log_path: "../../data/logs/normal/"
   report_path: "../../data/reports/normal/"
-  serialize_to_files: false
+  serialize_to_files: true
   tree_serialization_path: "../../data/serialized_tree/normal/"
+  report_statistics: false
+  sentence_from: 3180000
+  sentence_to: -1
 
