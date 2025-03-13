@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from joblib import Parallel, delayed
 
 class BinaryTreeLSTMCell(nn.Module):
     def __init__(self, input_size, hidden_size):
@@ -51,19 +52,33 @@ class BinaryTreeLSTM(nn.Module):
         self.classifier = nn.Linear(hidden_size, num_classes)
         self.num_classes = num_classes
 
+    # def forward(self, trees):
+    #     """
+    #     Args:
+    #         tree: A dictionary representing the tree (output from collate_fn)
+    #     Returns:
+    #         logits: Classification logits (batch_size, num_classes)
+    #     """
+
+    #     batch_logits = []
+    #     for tree in trees:
+    #         h, c = self._recursive_forward(tree)
+    #         logits = self.classifier(h).squeeze(0)
+    #         batch_logits.append(logits)
+    #     results = torch.stack(batch_logits)
+    #     return results
     def forward(self, trees):
         """
         Args:
-            tree: A dictionary representing the tree (output from collate_fn)
+            trees: A list of dictionaries representing the trees (output from collate_fn)
         Returns:
             logits: Classification logits (batch_size, num_classes)
         """
-
-        batch_logits = []
-        for tree in trees:
+        def process_tree(tree):
             h, c = self._recursive_forward(tree)
-            logits = self.classifier(h).squeeze(0)
-            batch_logits.append(logits)
+            return self.classifier(h).squeeze(0)
+
+        batch_logits = Parallel(n_jobs=-1)(delayed(process_tree)(tree) for tree in trees)
         results = torch.stack(batch_logits)
         return results
 
