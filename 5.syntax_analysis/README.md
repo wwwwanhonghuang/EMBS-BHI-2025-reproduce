@@ -9,7 +9,10 @@ $ cmake .
 $ make syntax_analysis -j
 ```
 
+
+
 ### 5.2 Configure
+
 The three default configurations files in this folder should work.
 Optionally edit these configurations if necessary.
 
@@ -28,7 +31,10 @@ syntax_analysis:
 + `input` specify a plain text file, each line is a sentence, with space is used for separating words. This input file can be generated according steps from [3.phase space reconstruction](../3.phase_space_reconstruction/README.md) to 4.pcfg_training ([Section 4.3](../4.pcfg_training/README.md#43-convert-npy-files-to-txt-files))
 + `serialize_to_files` specify whether the program should also save the serialized parse trees. This was set to `false`, as it can take more than `400` GB disk storage.
 
+
+
 ### 5.3 Run the binary
+
 ``` bash
 $ cd <repository_root/lib/pcfg-cky-inside-outside>
 $ ./bin/syntax_analysis ../../5.syntax_analysis/config_seizure.yaml
