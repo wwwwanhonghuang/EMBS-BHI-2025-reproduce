@@ -12,6 +12,10 @@ class SyntaxTreeNode:
         right = {} if self.right is None else self.right.to_dict()
         return {"v": self.value, "l": left, "r": right}
 
-        
+    def to_list(self):
+        left = [] if self.left is None else self.left.to_list()
+        right = [] if self.right is None else self.right.to_list()
+        return [self.value, left, right]
+
     def __repr__(self):
         return f"SyntaxTreeNode(value={self.value}, left={self.left}, right={self.right})"
