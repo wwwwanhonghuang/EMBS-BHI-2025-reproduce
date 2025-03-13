@@ -214,19 +214,18 @@ for metric_name in list(metrics[list(classifiers.keys())[0]].keys()):
 metrics_df = pd.DataFrame(metrics_summary).T
 
 # Save metrics
-np.save("metrics_summary.npy    ", metrics_summary, allow_pickle=True)
+np.save("metrics_summary.npy", metrics_summary, allow_pickle=True)
 metrics_df.to_csv(os.path.join(output_folder, "classification_metrics_comparison.csv"))
 print(metrics_df)
 
 # Plot metrics
-fig, ax = plt.subplots(figsize=(12, 8))
+fig, ax = plt.subplots(figsize=(40, 19))
 metrics_df.plot(kind='bar', ax=ax, edgecolor='black', linewidth=2)
-ax.set_title("Metrics Comparison Across Classifiers")
-ax.set_xlabel("Metrics")
-ax.set_ylabel("Score")
-ax.legend(title="Classifier", loc='upper right')
+ax.set_ylabel("Score", fontsize=56)
+ax.legend(loc='upper right', fontsize=56)
 plt.ylim([0, 1])
-plt.xticks(rotation=45, ha='right')
+plt.xticks(rotation=90, ha='right', fontsize=56)
+plt.yticks(fontsize=56)
 plt.tight_layout()
 plt.savefig(os.path.join(output_folder, "classification_metrics_comparison.pdf"))
 plt.show()
