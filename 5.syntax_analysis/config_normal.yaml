@@ -7,6 +7,6 @@ syntax_analysis:
   serialize_to_files: true
   tree_serialization_path: "../../data/serialized_tree/normal/"
   report_statistics: false
-  sentence_from: 3180000
+  sentence_from: 4000000
   sentence_to: -1
 
