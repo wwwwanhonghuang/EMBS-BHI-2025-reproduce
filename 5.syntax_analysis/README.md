@@ -31,7 +31,7 @@ syntax_analysis:
 ### 5.3 Run the binary
 ``` bash
 $ cd <repository_root/lib/pcfg-cky-inside-outside>
-$ ./bin/syntax_analysis 5.syntax_analysis/config_seizure.yaml
-$ ./bin/syntax_analysis 5.syntax_analysis/config_preepileptic.yaml
-$ ./bin/syntax_analysis 5.syntax_analysis/config_normal.yaml
+$ ./bin/syntax_analysis ../../5.syntax_analysis/config_seizure.yaml
+$ ./bin/syntax_analysis ../../5.syntax_analysis/config_preepileptic.yaml
+$ ./bin/syntax_analysis ../../5.syntax_analysis/config_normal.yaml
 ```
