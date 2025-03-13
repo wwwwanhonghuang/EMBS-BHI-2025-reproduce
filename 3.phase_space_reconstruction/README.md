@@ -8,23 +8,16 @@ The default configuration file should work.
 ``` json
 {
     "dataset_name": "epileptic_eeg_dataset",
-    "sids": [10, 11, 12, 13, 14, 15, "all"],
-    "merged_record_ids": [[[10, 1], [10, 2]], 
-                          [[11, 1], [11, 2], [11, 3], [11, 4]], 
-                          [[12, 1], [12, 2]], 
-                          [[13, 1], [13, 2], [13, 3], [13, 4]], 
-                          [[14, 1]],
-                          [[15, 1], [15, 2], [15, 3], [15, 4]], 
-                          [[10, 1], [10, 2], [11, 1], [11, 2], [11, 3], [12, 1], [12, 2], [13, 1], [13, 2], [13, 3], [13, 4], [14, 1], [15, 1], [15, 2], [15, 3], [15, 4]]],
+    "sids": ["all"],
+    "merged_record_ids": [[[11, 1], [11, 2], [11, 3], [12, 1], [12, 2], [13, 1], [13, 2], [13, 3], [13, 4], [14, 1], [15, 1], [15, 2], [15, 3], [15, 4]]],
     "microstate_filename_form": "\\[seg\\-\\[prep\\-asr\\]\\]person_#{sid}_states4_gev_.*",
     "delay": 2,
     "n_states": 4,
-    "corpus_storage_base_path": "../data/recurrence_sentence/epileptic_eeg_dataset/",
-    "microstate_storage_base_path": "../data/microstates/epileptic_eeg_dataset/",
-    "cut": [2, 800],
+    "corpus_storage_base_path": "../data/recurrence_sentences/epileptic_eeg_dataset",
+    "microstate_storage_base_path": "../data/microstates/epileptic_eeg_dataset",
+    "cut": [2, 4096],
     "dataset_base_path": "../data/dataset"
 }
-
 ```
 + `dataset_name` specifies the dataset's name, which should correspondent to a dataset folder name under <repository-root>/data/dataset.
 + `sids` specifies a set of data ID, which defined in the 'indexes' entries of configuration file (default =<repository-root>\2.microstate_training\configs\config-all-person-microstate.json) of microstate training.
@@ -34,6 +27,8 @@ The default configuration file should work.
 + `cut` specify the minimal and maximal recurrence sentence length.
 
 Please kindly ensure microstate segmentation files are already generated from `2.microstate_training`, and exist in the folder specified by `microstate_storage_base_path` ^_^.
+
+
 
 ### 3.2 Run the script
 ``` bash
@@ -47,9 +42,11 @@ all person's integrated EEG data.
 We can specify the script run with a specific configuration file by append `--configuration-file <path-to-configuration-file>` in the 
 running parameter. i.e., `python dataset_splitting_and_segmentation.py --configuration-file <path-to-configuration-file>`.
 
-We can also generate sentence for each person  and the integrated 'person' respectively.
+We can also generate sentences for each person and the integrated 'person' respectively.
 In this case, follow command should work
+
 ``` bash
 $ cd <path-to-3.phase_space_reconstruction>
 $ python dataset_splitting_and_segmentation.py --configuration-file ./configs/epilepsy_all_person_intergrated.json
 ```
+
