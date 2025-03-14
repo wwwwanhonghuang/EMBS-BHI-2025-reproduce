@@ -2,6 +2,23 @@ import torch
 import torch.nn as nn
 from joblib import Parallel, delayed
 
+class SeizurePredictionInputEmbeddingPreprocessor(nn.Module):
+    def __init__(self, unique_symbols, symbol_embedding_size, unique_grammar, grammar_embedding_size):
+        super(SeizurePredictionInputEmbeddingPreprocessor, self).__init__()
+        self.symbol_embedding = nn.Embedding(unique_symbols, symbol_embedding_size)
+        self.grammar_embedding = nn.Embedding(unique_grammar, grammar_embedding_size)
+
+    def forward(self, v):
+        v4_tensor = torch.tensor(v[4], dtype=torch.float32).unsqueeze(0)
+
+        return torch.cat([
+            self.symbol_embedding(torch.tensor(v[0], dtype=torch.long)),
+            self.symbol_embedding(torch.tensor(v[1], dtype=torch.long)),
+            self.symbol_embedding(torch.tensor(v[2], dtype=torch.long)),
+            v4_tensor,
+            self.grammar_embedding(torch.tensor(v[5], dtype=torch.long))
+        ])
+    
 class BinaryTreeLSTMCell(nn.Module):
     def __init__(self, input_size, hidden_size):
         super(BinaryTreeLSTMCell, self).__init__()
@@ -45,28 +62,15 @@ class BinaryTreeLSTMCell(nn.Module):
         return h, c
     
 class BinaryTreeLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_classes):
+    def __init__(self, input_size, hidden_size, num_classes, input_embedding_model = None):
         super(BinaryTreeLSTM, self).__init__()
         self.hidden_size = hidden_size
         self.tree_lstm_cell = BinaryTreeLSTMCell(input_size, hidden_size)
         self.classifier = nn.Linear(hidden_size, num_classes)
         self.num_classes = num_classes
+        self.embedding_model = input_embedding_model
+        self.input_size = input_size
 
-    # def forward(self, trees):
-    #     """
-    #     Args:
-    #         tree: A dictionary representing the tree (output from collate_fn)
-    #     Returns:
-    #         logits: Classification logits (batch_size, num_classes)
-    #     """
-
-    #     batch_logits = []
-    #     for tree in trees:
-    #         h, c = self._recursive_forward(tree)
-    #         logits = self.classifier(h).squeeze(0)
-    #         batch_logits.append(logits)
-    #     results = torch.stack(batch_logits)
-    #     return results
     def forward(self, trees):
         """
         Args:
@@ -78,12 +82,27 @@ class BinaryTreeLSTM(nn.Module):
             h, c = self._recursive_forward(tree)
             return self.classifier(h).squeeze(0)
 
-        batch_logits = Parallel(n_jobs=-1)(delayed(process_tree)(tree) for tree in trees)
+        batch_logits = [process_tree(tree) for tree in trees]
         results = torch.stack(batch_logits)
         return results
 
+    # def forward(self, trees):
+    #     """
+    #     Args:
+    #         trees: A list of dictionaries representing the trees (output from collate_fn)
+    #     Returns:
+    #         logits: Classification logits (batch_size, num_classes)
+    #     """
+    #     def process_tree(tree):
+    #         h, c = self._recursive_forward(tree)
+    #         return self.classifier(h).squeeze(0)
 
-    def _recursive_forward(self, node):
+    #     batch_logits = Parallel(n_jobs=-1)(delayed(process_tree)(tree) for tree in trees)
+    #     results = torch.stack(batch_logits)
+    #     return results
+
+
+    def _recursive_forward(self, node):            
         """
         Recursively process a node and its children.
         Args:
@@ -92,6 +111,7 @@ class BinaryTreeLSTM(nn.Module):
             h: Hidden state of the current node
             c: Cell state of the current node
         """
+   
         if not node:  # Base case: leaf node
             h = torch.zeros(1, self.hidden_size)
             c = torch.zeros(1, self.hidden_size)
@@ -101,9 +121,12 @@ class BinaryTreeLSTM(nn.Module):
         # Process left and right children
         h_left, c_left = self._recursive_forward(node.get("l", {}))
         h_right, c_right = self._recursive_forward(node.get("r", {}))
-        
-        # Convert node value to a tensor (assuming node["v"] is a tuple of 6 values)
-        x = torch.tensor(node["v"], dtype=torch.float32).unsqueeze(0)  # (1, input_size)
+    
+        v = node["v"]
+        if self.embedding_model:
+            x = self.embedding_model(v).view(1, self.input_size)
+        else:
+            x = torch.tensor(v, dtype=torch.float32).unsqueeze(0)  # (1, input_size)
 
         # Apply Tree-LSTM cell
         h, c = self.tree_lstm_cell(x, h_left, c_left, h_right, c_right)
