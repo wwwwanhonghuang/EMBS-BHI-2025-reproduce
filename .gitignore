@@ -8,3 +8,10 @@
 data/train_sentences.txt
 data/recurrence_sentences
 **/**/.ipynb_checkpoints/
+**/**/CMakeFiles
+**/CMakeFiles
+CMakeFiles
+CMakeCache.txt
+**/CMakeCache.txt
+cmake_install.cmake
+**/cmake_install.cmake

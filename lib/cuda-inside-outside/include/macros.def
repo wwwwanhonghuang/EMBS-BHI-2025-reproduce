@@ -1,0 +1,6 @@
+#ifndef MACROS_DEF
+#define MACROS_DEF
+// Macros for annotation. They not take any effect in runtime. Compiler just ignore them.
+#define __device_pt__
+#define __host_pt__
+#endif
