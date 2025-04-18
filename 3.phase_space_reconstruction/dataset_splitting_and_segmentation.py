@@ -16,18 +16,26 @@ from lib.dataset.experiment_utils import to_segment_sequence
 def build_recurrence_sentences(microstate_data, zone_type: str):
     print(f"Proceeding {zone_type} segments...")
     all_segments = []
+    all_repetitions = []
     for data_index, data in enumerate(microstate_data[f"{zone_type}"]):
-        segment_generator = FiniteTimeDelaySegmentGenerator(data=to_segment_sequence(data), time_delay=delay, n_states=n_states, cut=dict_args['cut'])
+        segment_generator = FiniteTimeDelaySegmentGenerator(data=to_segment_sequence(data, True), time_delay=delay, n_states=n_states, cut=dict_args['cut'], data_with_repetion = True)
         if args.index_only:
-            segments = segment_generator.calculate_recurrent_plot_points()
+            segments, repetition = segment_generator.calculate_recurrent_plot_points()
         else:
-            segments = segment_generator.calculate_recurrent_segments()
+            segments, repetition = segment_generator.calculate_recurrent_segments()
         all_segments.append(segments)
+        all_repetitions.append(repetition)
+        
         if args.out_splitted_fragments:
             np.save(os.path.join(corpus_storage_base_path, f'{zone_type}_{data_index}_{sid}_d{delay}_s{n_states}.npy'), np.array(segments, dtype='object'), allow_pickle=True)
+            np.save(os.path.join(corpus_storage_base_path, f'{zone_type}_{data_index}_{sid}_d{delay}_s{n_states}_repetition.npy'), np.array(repetition, dtype='object'), allow_pickle=True)
+
     if args.out_integrated_fragments:
         np.save(os.path.join(corpus_storage_base_path, 
                     f'{zone_type}_integrated_{sid}_d{delay}_s{n_states}.npy'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_segments , []), dtype='object'), 
+                    allow_pickle=True)
+        np.save(os.path.join(corpus_storage_base_path, 
+                    f'{zone_type}_integrated_{sid}_d{delay}_s{n_states}_repetition.npy'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_repetitions , []), dtype='object'), 
                     allow_pickle=True)
         print(f"out {zone_type}_integrated_{sid}_d{delay}_s{n_states} Total {len(all_segments)} segments to {os.path.join(corpus_storage_base_path, f'{zone_type}_integrated_{sid}_d{delay}_s{n_states}.npy')}")
     
@@ -153,6 +161,7 @@ for index, sid in enumerate(sids):
     if(data_total_length != data_total_length_after_splitting):
         print(f"data_total_length = {data_total_length}, data_total_length_after_splitting = {data_total_length_after_splitting}")
         assert False
+    
     assert data_total_length == data_total_length_after_splitting, \
     f"Mismatch in data length: {data_total_length} != {data_total_length_after_splitting}"
     print("Check microstate length == data_total_length_after_splitting.. Passed")
@@ -161,4 +170,3 @@ for index, sid in enumerate(sids):
     build_recurrence_sentences(microstate_data, "seizure")
     build_recurrence_sentences(microstate_data, "normal")
     build_recurrence_sentences(microstate_data, "pre-epileptic")
-    

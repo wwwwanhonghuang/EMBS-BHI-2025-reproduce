@@ -35,13 +35,20 @@ class FiniteTimeDelayEEGSegmentGenerator(BaseSegmentGenerator):
                     break
         return np.array(recurrent_plot_points)
 
-                
 class FiniteTimeDelaySegmentGenerator(BaseSegmentGenerator):
-    def __init__(self, data, n_states, time_delay = 15, cut=[2, 800]):
-        self.data = data
+    def __init__(self, data, n_states, time_delay = 15, cut=[2, 800], data_with_repetion = False):
         self.time_delay = time_delay
         self.n_states = n_states
         self.cut = cut
+        self.data_with_repetion = data_with_repetion
+        if data_with_repetion:
+            self.data = data[0]
+            self.repetition = data[1]
+        else:
+            self.data = data
+            self.repetition = None
+            
+
         
     def _time_delay_vector(self, t, time_delay):
         vec = self.data[max(t - time_delay + 1, 0): t + 1]
@@ -59,6 +66,8 @@ class FiniteTimeDelaySegmentGenerator(BaseSegmentGenerator):
         length = self.data.shape[0]
         
         recurrent_segments = []
+        if self.data_with_repetition:
+            repetition = []
         cut_lower = self.cut[0]
         cut_upper = self.cut[1] + 1
         for i in tqdm(range(self.time_delay, length)):
@@ -67,7 +76,10 @@ class FiniteTimeDelaySegmentGenerator(BaseSegmentGenerator):
                 if dist < epsilon:
                     if j - i > self.cut[0] and j - i <= cut_upper:
                         recurrent_segments.append(self.data[max(i - self.time_delay + 1, 0): j + 1])
+                        repetition.append(self.repetition[max(i - self.time_delay + 1, 0): j + 1])
                     break
+        if self.data_with_repetion:
+            return (recurrent_segments, repetition)
         return recurrent_segments
     
     def calculate_recurrent_plot_points(self, epsilon = 0.1):
@@ -85,7 +97,6 @@ class FiniteTimeDelaySegmentGenerator(BaseSegmentGenerator):
                         recurrent_plot_points.append((i, j))
                     break
         return np.array(recurrent_plot_points)
-
 
 class InfinitePhaseSpaceReonstructionBasedSegmentGenerator(BaseSegmentGenerator):
     def __init__(self, data, arg_lambda = 0.5, truncation = -1):

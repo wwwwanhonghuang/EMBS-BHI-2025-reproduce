@@ -31,7 +31,21 @@ def get_arguments(record_configuration):
     save_segmentation = record_configuration['extraction_process'].get("save_segmentation", True)
     load_preprocessed = record_configuration['extraction_process'].get("load_preprocessed", True)
     store_base_path = record_configuration['extraction_process']['store-path']
-    
+    return (
+        dataset_base_path,
+        dataset_name,
+        record_indexes,
+        preprocessing_pipeline,
+        post_merge_pipeline,
+        microstate_search_range,
+        n_iters,
+        stop_delta_threshold,
+        store_4_microstates,
+        save_preprocessed_data,
+        save_segmentation,
+        load_preprocessed,
+        store_base_path
+    )
 def begin_timing():
     global start_time
     start_time = datetime.now()
@@ -64,7 +78,22 @@ with open(args.database_index_configuration) as f:
     record_configuration = json.loads(data)
     f.close()
 
-get_arguments(record_configuration)
+(
+        dataset_base_path,
+        dataset_name,
+        record_indexes,
+        preprocessing_pipeline,
+        post_merge_pipeline,
+        microstate_search_range,
+        n_iters,
+        stop_delta_threshold,
+        store_4_microstates,
+        save_preprocessed_data,
+        save_segmentation,
+        load_preprocessed,
+        store_base_path
+) = get_arguments(record_configuration)
+
 dataset_facade = EEGDatasetFacade(dataset_base_path=dataset_base_path)
 dataset = dataset_facade(dataset_name)
 if not os.path.exists(store_base_path):
@@ -80,8 +109,7 @@ for person_index in record_indexes:
     # PART I : preprocessing
     print(f"Train microstates for person {person_index}")
     record_index_list = record_indexes[person_index]
-    expect_preprocessed_file_path = 
-        os.path.join(store_base_path, 
+    expect_preprocessed_file_path = os.path.join(store_base_path, 
             f'{preprocessed_file_prefix}p{person_index}.edf')
     
     if load_preprocessed and os.path.exists(expect_preprocessed_file_path):
@@ -119,6 +147,7 @@ for person_index in record_indexes:
     
     # PART II: train microstates
     recording = eeg_recording.SingleSubjectRecording("0", data)
+    
 
     print(f"Begin training microstates. Result will save in '{store_base_path}'")
     print(f" -- Search Microstate Amount from {microstate_search_range[0]} to {microstate_search_range[1]}")
@@ -135,8 +164,7 @@ for person_index in record_indexes:
             continue
         
         current_gev_tot = recording.gev_tot
-        print(f'previous gev_tot = {pre_gev_tot}, 
-            current_gev_tot = {current_gev_tot}')
+        print(f'previous gev_tot = {pre_gev_tot}, current_gev_tot = {current_gev_tot}')
         
         # Early stop training larger amount of microstates,
         # if GEV increment is smaller than threshold
