@@ -18,7 +18,7 @@ def build_recurrence_sentences(microstate_data, zone_type: str):
     all_segments = []
     all_repetitions = []
     for data_index, data in enumerate(microstate_data[f"{zone_type}"]):
-        segment_generator = FiniteTimeDelaySegmentGenerator(data=to_segment_sequence(data, True), time_delay=delay, n_states=n_states, cut=dict_args['cut'], data_with_repetion = True)
+        segment_generator = FiniteTimeDelaySegmentGenerator(data=to_segment_sequence(data, True), time_delay=delay, n_states=n_states, cut=dict_args['cut'], data_with_repetition = True)
         if args.index_only:
             segments, repetition = segment_generator.calculate_recurrent_plot_points()
         else:
@@ -31,9 +31,11 @@ def build_recurrence_sentences(microstate_data, zone_type: str):
             np.save(os.path.join(corpus_storage_base_path, f'{zone_type}_{data_index}_{sid}_d{delay}_s{n_states}_repetition.npy'), np.array(repetition, dtype='object'), allow_pickle=True)
 
     if args.out_integrated_fragments:
+        print(f"Save integrated fragments...")
         np.save(os.path.join(corpus_storage_base_path, 
                     f'{zone_type}_integrated_{sid}_d{delay}_s{n_states}.npy'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_segments , []), dtype='object'), 
                     allow_pickle=True)
+        print(f"Save Repetition Information...")
         np.save(os.path.join(corpus_storage_base_path, 
                     f'{zone_type}_integrated_{sid}_d{delay}_s{n_states}_repetition.npy'), np.array(reduce(lambda seg1, seg2: seg1 + seg2, all_repetitions , []), dtype='object'), 
                     allow_pickle=True)
