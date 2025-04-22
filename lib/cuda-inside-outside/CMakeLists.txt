@@ -8,7 +8,7 @@ find_package(CUDA REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 # Define the CUDA source file
-set(SOURCE_FILES src/cuda-inside-outside-main.cu src/device_management.cu)
+set(SOURCE_FILES src/cuda-inside-outside-main.cu src/device_management.cu src/utils/grammar_loader.cu)
 include_directories(include)
 
 # Add executable target and specify the source files
@@ -16,7 +16,7 @@ cuda_add_executable(cuda_inside_outside ${SOURCE_FILES})
 
 
 # Link necessary libraries
-target_link_libraries(cuda_inside_outside yaml-cpp cuda)
+target_link_libraries(cuda_inside_outside yaml-cpp cuda ${CMAKE_SOURCE_DIR}/lib/cky_parsing_lib.a)
 
 # Set any necessary compile options (optional)
 set_target_properties(cuda_inside_outside PROPERTIES

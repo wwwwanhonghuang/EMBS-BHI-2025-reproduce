@@ -3,6 +3,8 @@
 #include <yaml-cpp/yaml.h>
 #include <string>
 #include <memory>
+#include <grammar/grammar_parser.hpp>
+#include "utils/grammar_loader.cuh"
 #include "device_management.cuh"
 #include "macros.def"
 
@@ -63,37 +65,69 @@ __global__ void cky_initialization_kernel(int S, int MAX_SEQ_LEN,
    }
 }
 
-__global__ void cky_span_processing_kernel_calculate_intermediate_results(
-    int span_length, int S, int MAX_SEQ_LEN, 
-    float* cky, float* grammar, int* sequence, float* intermediate_results_buffer)
+
+#define TILE_SIZE 32
+
+// Helper function for atomic float max
+__device__ void atomicMaxFloat(float* address, float val) {
+    int* address_as_int = (int*)address;
+    int old = *address_as_int, assumed;
+    do {
+        assumed = old;
+        old = atomicCAS(address_as_int, assumed,
+            __float_as_int(fmaxf(val, __int_as_float(assumed))));
+    } while (assumed != old);
+}
+
+__global__ void cky_span_processing_kernel(
+    int span_length, int S, int MAX_SEQ_LEN,
+    float* __restrict__ cky,
+    float* __restrict__ grammar,
+    float* __restrict__ results)
 {
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
-    int s_A = threadIdx.y + blockIdx.y * blockDim.y;
-    int s_B = threadIdx.z + blockIdx.z * blockDim.z;
+    // Parallelize over 3 axes: i, s_A, s_B
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int s_A = blockIdx.y * blockDim.y + threadIdx.y;
+    int s_B = blockIdx.z * blockDim.z + threadIdx.z;
 
-    if (i >= MAX_SEQ_LEN || s_A >= S || s_B >= S)
-        return;
+    // Boundary checks
+    if (i >= MAX_SEQ_LEN - span_length || s_A >= S || s_B >= S) return;
 
-    // This loop could also be made parallel if desired
-    for (int i = 0; i < MAX_SEQ_LEN - span_length; i += blockIdx.x * blockDim.x) { // parallel i
-        int right_boundary = i + span_length;
+    int j = i + span_length;
+    if (j >= MAX_SEQ_LEN) return;
 
-        for (int k = i; k < right_boundary; k++) { // k-loop cannot be parallel. 
-            for(s_B = s_A,)
-            int id_s_B_i_k = s_B * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + k;
-            int id_s_C_k_p1_j = s_C * MAX_SEQ_LEN * MAX_SEQ_LEN + (k + 1) * MAX_SEQ_LEN + (i + span_length);
-            int id_grammar_A_B_C = s_A * S * S + s_B * S + s_C;
+    // Shared memory cache for grammar rules
+    __shared__ float grammar_cache[TILE_SIZE][TILE_SIZE];
+    
+    // Each thread loads one grammar rule to shared memory
+    if (threadIdx.z < TILE_SIZE && threadIdx.y < TILE_SIZE) {
+        int cache_s_B = threadIdx.z;
+        int cache_s_C = threadIdx.y;
+        grammar_cache[cache_s_B][cache_s_C] = 
+            grammar[s_A * S * S + s_B * S + cache_s_C];
+    }
+    __syncthreads();
 
-            float cky_val = cky[id_s_B_i_k] * cky[id_s_C_k_p1_j] * grammar[id_grammar_A_B_C];
+    float max_score = -INFINITY;
+    float left_score = cky[s_B * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + (i + threadIdx.y)];
 
-            int index = s_A * S * S * MAX_SEQ_LEN * MAX_SEQ_LEN + 
-                        s_B * S * MAX_SEQ_LEN * MAX_SEQ_LEN +
-                        s_C * MAX_SEQ_LEN * MAX_SEQ_LEN +
-                        i * MAX_SEQ_LEN + k;
+    // Process all possible splits (k) and right children (s_C)
+    for (int k_offset = 0; k_offset < span_length; k_offset += TILE_SIZE) {
+        int k = i + k_offset + threadIdx.y;
+        if (k >= j) continue;
 
-            intermediate_results_buffer[index] = cky_val;
+        float right_score = cky[threadIdx.z * MAX_SEQ_LEN * MAX_SEQ_LEN + (k+1) * MAX_SEQ_LEN + j];
+        
+        // Process TILE_SIZE s_C values at once
+        for (int s_C = 0; s_C < S; s_C += TILE_SIZE) {
+            float rule = grammar_cache[s_B % TILE_SIZE][s_C % TILE_SIZE];
+            float current = left_score * right_score * rule;
+            max_score = fmaxf(max_score, current);
         }
     }
+
+    // Atomic max to handle parallel writes
+    atomicMaxFloat(&results[s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j], max_score);
 }
 
 
@@ -127,8 +161,13 @@ void cuda_cky_algorithm(AlgorithmContext context) {
        parallelizable units of computation. Therefore, we set the largest grain of
        parallelism to the computation over a specific span length. */
     for(int span_length = 2; span_length < context.MAX_SEQ_LEN; span_length++) {
-        cky_span_processing_kernel<<<16, 16>>>(span_length, context.S, context.MAX_SEQ_LEN, context.CKY.ptr, contex.sequence.ptr);
+        dim3 cky_blockDim(64, 4, 4);  // Each block has N x S x S threads
+        dim3 cky_gridDim((context.MAX_SEQ_LEN + 64 - 1) / 64, (context.S + 4 - 1) / 4, (context.S + 4 - 1) / 4); 
+        cky_span_processing_kernel<<<cky_gridDim, cky_blockDim>>>(
+            span_length, context.S, context.MAX_SEQ_LEN, 
+            context.CKY.ptr, context.grammar.ptr, context.intermediate_results_buffer.ptr);
         cudaDeviceSynchronize();
+
     }
     std::cout << "[Completed] CKY Algorithm." << std::endl;
 
@@ -151,7 +190,6 @@ int main(int argc, char* argv[]) {
         std::cerr << "Failed to load configuration file!" << std::endl;
         return -1;  // Handle the error
     }
-
     
     int use_device_id = config["cuda_device"]["use_device_id"].as<int>();
     if(select_cuda_device(use_device_id) == 0){
@@ -162,30 +200,43 @@ int main(int argc, char* argv[]) {
 
     int S = config["cky_buffer"]["size"]["S"].as<int>();
     int MAX_SEQ_LEN = config["cky_buffer"]["size"]["max_seq_len"].as<int>();
-    
-    size_t n_cky_buffer_elements = S * MAX_SEQ_LEN * MAX_SEQ_LEN;
-    size_t n_grammar_buffer_elements = S * S * S; // A -> B C
-    size_t n_sequence_buffer_elements = MAX_SEQ_LEN; // A -> B C
-    size_t n_intermediate_results_buffer_elements = S * S * S * MAX_SEQ_LEN * MAX_SEQ_LEN; // A -> B C
+    const std::string& grammar_file_path =  config["grammar"]["file_path"].as<std::string>();
+    std::cout << "grammar file path = " << grammar_file_path << std::endl;
+    pcfg* parsed_pcfg = prepare_grammar(grammar_file_path);
+    __host_pt__ float* host_grammar_buffer = initialize_grammar_buffer_from_pcfg(parsed_pcfg);
+   
 
+    size_t n_cky_buffer_elements = S * MAX_SEQ_LEN * MAX_SEQ_LEN;
+    size_t n_grammar_buffer_elements = (S + 1) * (S + 1) * (S + 1);
+    size_t n_sequence_buffer_elements = MAX_SEQ_LEN; // A -> B C
+    long n_intermediate_results_buffer_elements = S * S * MAX_SEQ_LEN * MAX_SEQ_LEN; // [A, B, i, k]
+    std::cout << MAX_SEQ_LEN << "," << S << ", " << S * S * MAX_SEQ_LEN * MAX_SEQ_LEN  << std::endl;
     cuda_gc_managed_pt<float> d_CKY = cuda_gc->allocate<float>(n_cky_buffer_elements);
     cuda_gc_managed_pt<float> grammar = cuda_gc->allocate<float>(n_grammar_buffer_elements);
-    cuda_gc_managed_pt<float> sequence = cuda_gc->allocate<int>(n_sequence_buffer_elements);
+    cuda_gc_managed_pt<int> sequence = cuda_gc->allocate<int>(n_sequence_buffer_elements);
     cuda_gc_managed_pt<float> intermediate_results_buffer = cuda_gc->allocate<float>(n_intermediate_results_buffer_elements);
-
-
     context.S = S;
     context.MAX_SEQ_LEN = MAX_SEQ_LEN;
     context.CKY = d_CKY;
     context.grammar = grammar;
-    contex.intermediate_results_buffer = intermediate_results_buffer;
+    context.intermediate_results_buffer = intermediate_results_buffer;
 
     initialize_buffers(context);
-
     cudaDeviceSynchronize();
 
-    cuda_cky_algorithm(context);
+    __host_pt__ int* host_sequence = new int[MAX_SEQ_LEN];
+    
+    /* fish people fish tanks == 10 9 10 11*/
+    host_sequence[0] = 10;
+    host_sequence[1] = 9;
+    host_sequence[2] = 10;
+    host_sequence[3] = 11;
 
+    cudaMemcpy(grammar.ptr, host_grammar_buffer, n_grammar_buffer_elements * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(sequence.ptr, host_sequence, n_sequence_buffer_elements * sizeof(int), cudaMemcpyHostToDevice);
+
+
+    cuda_cky_algorithm(context);
 
     /* Process data in host. */
     // For demonstration: copy a small part of CKY to the host and print a value

@@ -16,8 +16,12 @@ cuda_device:
 # Buffer configuration
 cky_buffer:
   size:
-    S: 10
-    max_seq_len: 100
+    S: 54
+    max_seq_len: 512
+
+
+grammar:
+  file_path: ../../data/pcfg/grammar_demo.pcfg
 
 # Kernel configuration
 kernel:
