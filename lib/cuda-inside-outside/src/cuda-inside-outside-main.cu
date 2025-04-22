@@ -79,6 +79,36 @@ __device__ void atomicMaxFloat(float* address, float val) {
     } while (assumed != old);
 }
 
+
+__global__ void cky_reduce_kernel(
+    int S, 
+    int MAX_SEQ_LEN,
+    float* __restrict__ cky_table,
+    float* __restrict__ intermediate_buffer
+){
+    // Parallelize across 3D grid: s_A, i, j
+    int s_A = blockIdx.x * blockDim.x + threadIdx.x;
+    int i = blockIdx.y * blockDim.y + threadIdx.y;
+    int j = blockIdx.z * blockDim.z + threadIdx.z;
+    
+    // Boundary checks
+    if (s_A >= S || i >= MAX_SEQ_LEN || j >= MAX_SEQ_LEN) 
+        return;
+
+    float max_val = -INFINITY;
+    int base_idx = s_A * S * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j;
+
+    // Each thread reduces across s_B dimension
+    for (int s_B = 0; s_B < S; s_B++) {
+        int buffer_idx = base_idx + s_B * MAX_SEQ_LEN * MAX_SEQ_LEN;
+        max_val = fmaxf(max_val, intermediate_buffer[buffer_idx]);
+    }
+
+    // Write reduced result to CKY table
+    cky_table[s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j] = max_val;
+}
+
+
 __global__ void cky_span_processing_kernel(
     int span_length, int S, int MAX_SEQ_LEN,
     float* __restrict__ cky,
@@ -160,15 +190,16 @@ void cuda_cky_algorithm(AlgorithmContext context) {
     /* In the CKY algorithm, tasks with a particular span length represent the largest
        parallelizable units of computation. Therefore, we set the largest grain of
        parallelism to the computation over a specific span length. */
+    dim3 cky_blockDim(64, 4, 4);  // Each block has N x S x S threads
+    dim3 cky_gridDim((context.MAX_SEQ_LEN + 64 - 1) / 64, (context.S + 4 - 1) / 4, (context.S + 4 - 1) / 4); 
     for(int span_length = 2; span_length < context.MAX_SEQ_LEN; span_length++) {
-        dim3 cky_blockDim(64, 4, 4);  // Each block has N x S x S threads
-        dim3 cky_gridDim((context.MAX_SEQ_LEN + 64 - 1) / 64, (context.S + 4 - 1) / 4, (context.S + 4 - 1) / 4); 
+       
         cky_span_processing_kernel<<<cky_gridDim, cky_blockDim>>>(
             span_length, context.S, context.MAX_SEQ_LEN, 
             context.CKY.ptr, context.grammar.ptr, context.intermediate_results_buffer.ptr);
         cudaDeviceSynchronize();
-
     }
+    cky_reduce_kernel<<<cky_gridDim, cky_blockDim>>>(context.S, context.MAX_SEQ_LEN, context.CKY.ptr, context.intermediate_results_buffer.ptr);
     std::cout << "[Completed] CKY Algorithm." << std::endl;
 
 }
