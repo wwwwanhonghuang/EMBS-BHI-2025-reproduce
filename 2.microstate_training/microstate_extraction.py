@@ -16,7 +16,34 @@ global end_time
 start_time = -1
 end_time = -1
 
+global dataset_base_path
+global dataset_name
+global record_indexes
+global preprocessing_pipeline
+global post_merge_pipeline
+global microstate_search_range
+global n_iters
+global stop_delta_threshold
+global store_4_microstates
+global save_preprocessed_data
+global save_segmentation
+global load_preprocessed
+global store_base_path
+
 def get_arguments(record_configuration):
+    global dataset_base_path
+    global dataset_name
+    global record_indexes
+    global preprocessing_pipeline
+    global post_merge_pipeline
+    global microstate_search_range
+    global n_iters
+    global stop_delta_threshold
+    global store_4_microstates
+    global save_preprocessed_data
+    global save_segmentation
+    global load_preprocessed
+    global store_base_path
     dataset_base_path = record_configuration['extraction_process']['dataset_base_path']
     dataset_name = record_configuration['extraction_process']['database_name']
     record_indexes = record_configuration['indexes']
@@ -80,8 +107,7 @@ for person_index in record_indexes:
     # PART I : preprocessing
     print(f"Train microstates for person {person_index}")
     record_index_list = record_indexes[person_index]
-    expect_preprocessed_file_path = 
-        os.path.join(store_base_path, 
+    expect_preprocessed_file_path = os.path.join(store_base_path, 
             f'{preprocessed_file_prefix}p{person_index}.edf')
     
     if load_preprocessed and os.path.exists(expect_preprocessed_file_path):
@@ -112,7 +138,7 @@ for person_index in record_indexes:
             print(f"[Post Merging Preprocessing {index}: {slice_begin // block_size + 1}/{int(np.ceil(data_count / block_size))}]... name = {postprocessing_pipeline_item[0]}")
             postprocessing_name = postprocessing_pipeline_item[0]
             postprocessing_arguments = postprocessing_pipeline_item[1]
-            PostprocessingController.preprocessing(data, postprocessing_name, postprocessing_arguments)
+            PreprocessingController.preprocessing(data, postprocessing_name, postprocessing_arguments)
         
         if save_preprocessed_data:
             mne.export.export_raw(expect_preprocessed_file_path, data, overwrite=True)
@@ -135,8 +161,7 @@ for person_index in record_indexes:
             continue
         
         current_gev_tot = recording.gev_tot
-        print(f'previous gev_tot = {pre_gev_tot}, 
-            current_gev_tot = {current_gev_tot}')
+        print(f'previous gev_tot = {pre_gev_tot}, current_gev_tot = {current_gev_tot}')
         
         # Early stop training larger amount of microstates,
         # if GEV increment is smaller than threshold
