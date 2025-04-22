@@ -55,11 +55,9 @@ Before training, we need convert the microstate sequence into correct word id, a
 To do this, firstly, ensuring setting up the `phase_convert` section in configuration file `4.pcfg_training\pcfg-cky-inside-outside\config.yaml`. 
 The default configuration file should work^.
 
-Follow command line can then be used to generate correct form of sentences that match the grammar:
 ``` bash
-$ cd <repository-root>/lib/pcfg-cky-inside-outside
-$ make phase_convert
-$ ./bin/phase_convert ../../4.pcfg_training/config_sentence_encoding_normal.yaml
+$ sh make_phase_converter.sh
+$ sh phase_space_reconstruction.sh
 ```
 
 ### 4.5 Train PCFG

@@ -36,12 +36,12 @@ class FiniteTimeDelayEEGSegmentGenerator(BaseSegmentGenerator):
         return np.array(recurrent_plot_points)
 
 class FiniteTimeDelaySegmentGenerator(BaseSegmentGenerator):
-    def __init__(self, data, n_states, time_delay = 15, cut=[2, 800], data_with_repetion = False):
+    def __init__(self, data, n_states, time_delay = 15, cut=[2, 800], data_with_repetition=False):
         self.time_delay = time_delay
         self.n_states = n_states
         self.cut = cut
-        self.data_with_repetion = data_with_repetion
-        if data_with_repetion:
+        self.data_with_repetition = data_with_repetition
+        if data_with_repetition:
             self.data = data[0]
             self.repetition = data[1]
         else:
@@ -78,7 +78,7 @@ class FiniteTimeDelaySegmentGenerator(BaseSegmentGenerator):
                         recurrent_segments.append(self.data[max(i - self.time_delay + 1, 0): j + 1])
                         repetition.append(self.repetition[max(i - self.time_delay + 1, 0): j + 1])
                     break
-        if self.data_with_repetion:
+        if self.data_with_repetition:
             return (recurrent_segments, repetition)
         return recurrent_segments
     
