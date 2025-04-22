@@ -3,4 +3,40 @@
 // Macros for annotation. They not take any effect in runtime. Compiler just ignore them.
 #define __device_pt__
 #define __host_pt__
+
+
+#define BYTES_GRAMMAR_TABLE_ITEMS 12
+#define BYTE_4_CELL_PER_GRAMMAR_TABLE_ITEMS 3
+
+
+#define _32bit_t int32_t
+#define SYMBOL_ID(SYMBOL_DESC) 
+#define IS_EPSILON(SYMBOL_ID) ((SYMBOL_ID) == 0xFFFF)
+#define IS_TERMINATE(SYMBOL_ID) ((SYMBOL_ID) >= N && (SYMBOL_ID) != 0xFFFF)
+#define IS_NONTERMINATE(SYMBOL_ID) ((SYMBOL_ID) < N)
+
+#define ALPHA_INCREASE(SYMBOL, I, J, VALUE) alpha[(SYMBOL) * MS * MS + (I) * MS + J] +=  VALUE;
+#define BETA_INCREASE(SYMBOL, I, J, VALUE) beta[(SYMBOL) * MS * MS + (I) * MS + J] +=  VALUE;
+#define MU_INCREASE(SYMBOL, I, J, VALUE) mu[(SYMBOL) * MS * MS + (I) * MS + J] +=  VALUE;
+
+#define LOG_SUM_EXP_SET(A, B) A = log_sum_exp(A, B);
+
+
+#define ALPHA(SYMBOL, I, J) alpha[(SYMBOL) * MS * MS + (I) * MS + J] 
+#define BETA(SYMBOL, I, J) beta[(SYMBOL) * MS * MS + (I) * MS + J]
+#define MU(GID, I, J) mu[(GID) * MS * MS + (I) * MS + J]
+#define ALPHA_GET(SYMBOL, I, J) ((I) > (J) ? 0.0f : (SYMBOL) < N ? ALPHA(SYMBOL, I, J) : ((SYMBOL) == 0xFFFF ? -INFINITY: ((I) == (J) && sequence[I] == (SYMBOL) ? 0.0f : -INFINITY)))
+
+
+#define SYMBOL_STR(SYMBOL_ID) ((SYMBOL_ID) < N ? grammar->reversed_nonterminate_map[(SYMBOL_ID)]: grammar->reversed_terminate_map[(SYMBOL_ID) - N])
+
+#define POSSIBILITY_ADD(P1, P2) log_sum_exp((P1), (P2))
+
+
+#define INIT_POSSIBILITY -INFINITY
+
+#define TREE_VALUE_INDEX_DERIVATION 5
+#define TREE_VALUE_INDEX_SYMBOL 0
+
+
 #endif
