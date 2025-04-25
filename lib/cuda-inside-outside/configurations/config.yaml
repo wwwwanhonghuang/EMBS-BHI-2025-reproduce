@@ -16,8 +16,8 @@ cuda_device:
 # Buffer configuration
 cky_buffer:
   size:
-    S: 54
-    max_seq_len: 512
+    S: 14
+    max_seq_len: 10
 
 
 grammar:
