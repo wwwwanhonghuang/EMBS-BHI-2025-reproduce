@@ -113,6 +113,13 @@ __global__ void cky_reduce_kernel(
 }
 
 
+__device__ float logsumexpf(float a, float b) {
+    if (a == -INFINITY) return b;
+    if (b == -INFINITY) return a;
+    float max_ab = fmaxf(a, b);
+    return max_ab + logf(expf(a - max_ab) + expf(b - max_ab));
+}
+
 __global__ void cky_span_processing_kernel(
     int span_length, int S, int MAX_SEQ_LEN,
     float* __restrict__ cky,
@@ -143,7 +150,7 @@ __global__ void cky_span_processing_kernel(
     
     __syncthreads();
 
-    float max_score = -INFINITY;
+    float total_score = -INFINITY;
     float left_score = cky[s_B * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + (i + threadIdx.y)];
 
     // Process all possible splits (k) and right children (s_C)
@@ -156,13 +163,12 @@ __global__ void cky_span_processing_kernel(
         // Process TILE_SIZE s_C values at once
         for (int s_C = 0; s_C < S; s_C += TILE_SIZE) {
             float rule = grammar_cache[s_B % TILE_SIZE][s_C % TILE_SIZE];
-            float current = left_score * right_score * rule;
-            max_score = fmaxf(max_score, current);
+            float current_score = left_score + right_score + rule; // All possibilities are in logarithmic.
+            total_score = logsumexpf(total_score, current_score);
         }
     }
 
-    // Atomic max to handle parallel writes
-    atomicMaxFloat(&results[s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j], max_score);
+    results[s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j] = total_score;
 }
 
 

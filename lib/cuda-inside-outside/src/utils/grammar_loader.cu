@@ -41,7 +41,7 @@ __host_pt__ float* initialize_grammar_buffer_from_pcfg(pcfg* pcfg_data){
             int rhs_id1 = get_symbol_id(grammar_record.right1);
             int rhs_id2 = get_symbol_id(grammar_record.right2);
 
-            gramamr_buffer[lhs_id * (S + 1) * (S + 1) + rhs_id1 * (S + 1) + rhs_id2] = grammar_record.possibility;
+            gramamr_buffer[lhs_id * (S + 1) * (S + 1) + rhs_id1 * (S + 1) + rhs_id2] = std::log(grammar_record.possibility);
 
         }
     }
