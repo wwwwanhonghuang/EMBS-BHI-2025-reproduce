@@ -17,3 +17,14 @@ int select_cuda_device(int device_id){
     cudaSetDevice(device_id);
     return 0;
 }
+
+template <>
+void CudaGC::fill(cuda_gc_managed_pt<float>& ptr, float value) {
+    float* data = ptr.ptr;
+    size_t count = ptr.element_count;
+    std::fill(data, data + count, value);
+
+    // Optional: prefetch to GPU if you plan to use it on the device
+    cudaMemPrefetchAsync(data, count * sizeof(float), 0); // 0 = default device
+    cudaDeviceSynchronize(); // Wait for prefetch if needed
+}

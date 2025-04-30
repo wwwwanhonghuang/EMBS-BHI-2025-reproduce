@@ -16,7 +16,9 @@ __host_pt__ float* initialize_grammar_buffer_from_pcfg(pcfg* pcfg_data){
     std::cout << "Count of Total Symbols = " << S << std::endl;
     std::cout << "Allocate grammar buffer size = (S+1)^3 * sizeof(float) = " 
         << (S + 1) * (S + 1) * (S + 1) << " * " << sizeof(float) << " B = " << (S + 1) * (S + 1) * (S + 1) * sizeof(float) / (1024.0 * 1024.0) << " MB" << std::endl;
-    __host_pt__ float* gramamr_buffer = new float[(S + 1) * (S + 1) * (S + 1)]();
+    __host_pt__ float* grammar_buffer = new float[(S + 1) * (S + 1) * (S + 1)]();
+
+    std::fill(grammar_buffer, grammar_buffer + (S + 1) * (S + 1) * (S + 1), -INFINITY);
 
     auto get_symbol_id = [pcfg_data](const std::string& symbol) -> int {
         if(pcfg_data->nonterminate_map.find(symbol) != pcfg_data->nonterminate_map.end()) {
@@ -41,9 +43,8 @@ __host_pt__ float* initialize_grammar_buffer_from_pcfg(pcfg* pcfg_data){
             int rhs_id1 = get_symbol_id(grammar_record.right1);
             int rhs_id2 = get_symbol_id(grammar_record.right2);
 
-            gramamr_buffer[lhs_id * (S + 1) * (S + 1) + rhs_id1 * (S + 1) + rhs_id2] = std::log(grammar_record.possibility);
-
+            grammar_buffer[lhs_id * (S + 1) * (S + 1) + rhs_id1 * (S + 1) + rhs_id2] = grammar_record.possibility;
         }
     }
-    return gramamr_buffer;
+    return grammar_buffer;
 }
