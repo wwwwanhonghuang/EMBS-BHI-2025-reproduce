@@ -207,16 +207,16 @@ void cuda_cky_algorithm(AlgorithmContext context) {
     /* In the CKY algorithm, tasks with a particular span length represent the largest
        parallelizable units of computation. Therefore, we set the largest grain of
        parallelism to the computation over a specific span length. */
-    dim3 cky_blockDim(64, 4, 4);  // Each block has N x S x S threads
-    dim3 cky_gridDim((context.MAX_SEQ_LEN + 64 - 1) / 64, (context.S + 4 - 1) / 4, (context.S + 4 - 1) / 4); 
-    for(int span_length = 2; span_length < context.MAX_SEQ_LEN; span_length++) {
+    // dim3 cky_blockDim(64, 4, 4);  // Each block has N x S x S threads
+    // dim3 cky_gridDim((context.MAX_SEQ_LEN + 64 - 1) / 64, (context.S + 4 - 1) / 4, (context.S + 4 - 1) / 4); 
+    // for(int span_length = 2; span_length < context.MAX_SEQ_LEN; span_length++) {
        
-        cky_span_processing_kernel<<<cky_gridDim, cky_blockDim>>>(
-            span_length, context.S, context.MAX_SEQ_LEN, 
-            context.CKY.ptr, context.grammar.ptr, context.intermediate_results_buffer.ptr);
-        cudaDeviceSynchronize();
-    }
-    cky_reduce_kernel<<<cky_gridDim, cky_blockDim>>>(context.S, context.MAX_SEQ_LEN, context.CKY.ptr, context.intermediate_results_buffer.ptr);
+    //     cky_span_processing_kernel<<<cky_gridDim, cky_blockDim>>>(
+    //         span_length, context.S, context.MAX_SEQ_LEN, 
+    //         context.CKY.ptr, context.grammar.ptr, context.intermediate_results_buffer.ptr);
+    //     cudaDeviceSynchronize();
+    // }
+    // cky_reduce_kernel<<<cky_gridDim, cky_blockDim>>>(context.S, context.MAX_SEQ_LEN, context.CKY.ptr, context.intermediate_results_buffer.ptr);
     
     std::cout << "[Completed] CKY Algorithm." << std::endl;
 
@@ -274,7 +274,6 @@ int main(int argc, char* argv[]) {
     
     initialize_buffers(context);
     cuda_gc->fill(intermediate_results_buffer, -INFINITY);
-    return -1;
     cudaDeviceSynchronize();
     __host_pt__ int* host_sequence = new int[MAX_SEQ_LEN];
     
