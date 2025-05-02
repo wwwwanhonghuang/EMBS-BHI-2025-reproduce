@@ -25,7 +25,8 @@ struct AlgorithmContext{
     cuda_gc_managed_pt<float> intermediate_results_buffer;
     cuda_gc_managed_pt<int> d_changed;
     std::shared_ptr<CudaGC> cuda_gc;
-
+    cuda_gc_managed_pt<int> inside_order_1_rule_iteration_path;
+    int inside_order_1_rule_iteration_path_length;
 };
 
 
@@ -177,7 +178,7 @@ __global__ void cky_span_processing_kernel(
     float* __restrict__ cky,
     float* __restrict__ grammar,
     float* __restrict__ results,
-    float* unary_chain, int unary_chain_length)
+    int* unary_chain, int unary_chain_length)
 {
     // Parallelize over spans and non-terminals
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -304,7 +305,7 @@ void cuda_cky_algorithm(AlgorithmContext context) {
        
         cky_span_processing_kernel<<<cky_gridDim, cky_blockDim>>>(
             span_length, context.S, context.MAX_SEQ_LEN, 
-            context.CKY.ptr, context.grammar.ptr, context.intermediate_results_buffer.ptr);
+            context.CKY.ptr, context.grammar.ptr, context.intermediate_results_buffer.ptr, context.inside_order_1_rule_iteration_path.ptr, context.inside_order_1_rule_iteration_path_length);
         cudaDeviceSynchronize();
        
         break;
@@ -314,6 +315,84 @@ void cuda_cky_algorithm(AlgorithmContext context) {
     
     std::cout << "[Completed] CKY Algorithm." << std::endl;
 
+}
+
+
+
+int* _generate_inside_perterminate_iteration_paths(pcfg* grammar){
+    int n_syms = grammar->N() + grammar->T();
+    int N = grammar->N();
+    std::vector<bool> dependency_graph(n_syms * n_syms, false);
+    int edges = 0;
+    
+    std::vector<std::tuple<uint32_t, uint32_t>> rules = std::vector<std::tuple<uint32_t, uint32_t>>();
+    std::vector<std::tuple<uint32_t, uint32_t>> results;
+    std::map<uint32_t, uint32_t> gid_map = {};
+
+    for(std::tuple<uint32_t, uint32_t, uint32_t, double, uint32_t> item : 
+            PCFGItemIterator(N, (uint32_t*) grammar->grammar_index, (uint32_t*)grammar->grammar_table)){
+        uint32_t sym_A = std::get<0>(item);
+        uint32_t sym_B = std::get<1>(item);
+        uint32_t sym_C = std::get<2>(item);
+        double possibility = std::get<3>(item);
+        uint32_t gid = std::get<4>(item);
+        if(!IS_EPSILON(sym_C)) continue;
+        dependency_graph[sym_A * n_syms + sym_B] = 1; // edge A -> B
+        gid_map[((sym_A << 16) & 0xFFFF0000) | (sym_B & 0x0000FFFF)] = gid;
+        edges++;
+    }
+    
+    // topological sort
+    while(true){
+        int _pre_n_edges = edges;
+        for(int sym_B = 0; sym_B < n_syms; sym_B++){
+            bool elimnatable = true;
+            for(int sym_A = 0; sym_A < n_syms; sym_A++){
+                assert(sym_A != sym_B || !dependency_graph[sym_B * n_syms + sym_A]);
+                if(dependency_graph[sym_B * n_syms + sym_A]){ 
+                    elimnatable = false; // B cannot connect to any node! Or it cannot be eliminated.
+                }
+            }
+            
+            if(!elimnatable) continue;
+            
+            // eliminate B, and disconnect all A -> B
+            for(int sym_A = 0; sym_A < n_syms; sym_A++){
+                if(dependency_graph[sym_A * n_syms + sym_B]){
+                    dependency_graph[sym_A * n_syms + sym_B] = 0;
+                    rules.emplace_back(std::make_pair(sym_A, sym_B));
+                    edges--;
+                }
+            }
+        }
+        if(edges == 0) break;
+        if(_pre_n_edges == edges) {
+            std::cout << "Cyclic preterminate production detected. Edge remains == " << edges << std::endl;
+            assert(edges == 0);
+        }
+    }
+
+    for(auto&& syms : rules){
+        uint32_t sym_A = std::get<0>(syms);
+        uint32_t sym_B = std::get<1>(syms);
+
+        // Lookup gid directly from gid_map
+        auto it = gid_map.find((sym_A << 16) | sym_B);
+        if (it != gid_map.end()) {
+            results.emplace_back(std::make_pair(sym_A, sym_B));
+        }else{
+            std::cout << "Algorithm Error: cannot find a specific rule's ID." << std::endl;
+        }
+    }
+
+    int* results_buffer = new int[2 * results.size() + 1]();
+    results_buffer[0] = results.size();
+    int record_index = 0;
+    for(auto& record : results){
+        results_buffer[1 + record_index * 2] = std::get<0>(record);
+        results_buffer[1 + record_index * 2 + 1] = std::get<0>(record);
+    }
+    return results_buffer;
 }
 
 
@@ -372,12 +451,15 @@ int main(int argc, char* argv[]) {
     context.intermediate_results_buffer = intermediate_results_buffer;
     context.d_changed = d_changed;
     
+    
+    int* inside_order_1_rule_iteration_path = _generate_inside_perterminate_iteration_paths(parsed_pcfg);
+    cuda_gc_managed_pt<int> cuda_inside_order_1_rule_iteration_path = cuda_gc->allocate<int>((*inside_order_1_rule_iteration_path) * 2);
+    context.inside_order_1_rule_iteration_path = cuda_inside_order_1_rule_iteration_path;
+    context.inside_order_1_rule_iteration_path_length = *inside_order_1_rule_iteration_path;
+
     initialize_buffers(context);
     cuda_gc->fill(intermediate_results_buffer, -INFINITY);
     cudaDeviceSynchronize();
-
-    auto inside_order_1_rule_iteration_path = generate_inside_perterminate_iteration_paths(parsed_pcfg);
-    
 
     __host_pt__ int* host_sequence = new int[MAX_SEQ_LEN];
     
@@ -395,6 +477,8 @@ int main(int argc, char* argv[]) {
 
     cudaMemcpy(grammar.ptr, host_grammar_buffer, n_grammar_buffer_elements * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(sequence.ptr, host_sequence, n_sequence_buffer_elements * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(cuda_inside_order_1_rule_iteration_path.ptr, inside_order_1_rule_iteration_path + 1, *inside_order_1_rule_iteration_path * sizeof(int), cudaMemcpyHostToDevice);
+
     context.sequence = sequence;
     context.grammar = grammar;
     cuda_cky_algorithm(context);
