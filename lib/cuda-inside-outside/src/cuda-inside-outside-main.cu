@@ -134,42 +134,6 @@ __device__ void atomicMaxFloat(float* address, float val) {
     } while (assumed != old);
 }
 
-
-__global__ void cky_reduce_kernel_span(
-    int S, 
-    int MAX_SEQ_LEN,
-    float* __restrict__ cky_table,
-    float* __restrict__ intermediate_buffer,
-    int span_length
-){
-    // Parallelize across spans and non-terminals
-    int s_A = blockIdx.x * blockDim.x + threadIdx.x;
-    int i = blockIdx.y * blockDim.y + threadIdx.y;
-    
-    // Boundary checks
-    if (s_A >= S || i >= MAX_SEQ_LEN - span_length) 
-        return;
-        
-    int j = i + span_length - 1;
-    if (j >= MAX_SEQ_LEN) return;
-
-    // Each thread reduces its assigned (s_A, i, j) across all s_B
-    float reduced_val = -INFINITY;
-    int base_idx = s_A * (S + 1) * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN;
-    
-    for (int s_B = 0; s_B <= S; s_B++) {
-        int buffer_idx = base_idx + s_B * MAX_SEQ_LEN * MAX_SEQ_LEN + j;
-        reduced_val = logsumexpf(reduced_val, intermediate_buffer[buffer_idx]);
-    }
-
-    // Write reduced result to CKY table
-    if (reduced_val != -INFINITY) {
-        cky_table[s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j] = 
-            logsumexpf(cky_table[s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j], 
-                      reduced_val);
-    }
-}
-
 __global__ void cky_reduce_kernel(
     int S, 
     int MAX_SEQ_LEN,
@@ -208,11 +172,12 @@ __device__ float logsumexpf(float a, float b) {
     return max_ab + logf(expf(a - max_ab) + expf(b - max_ab));
 }
 
-__global__ void cky_span_processing_kernel_order_2(
+__global__ void cky_span_processing_kernel(
     int span_length, int S, int MAX_SEQ_LEN,
     float* __restrict__ cky,
     float* __restrict__ grammar,
-    float* __restrict__ results)
+    float* __restrict__ results,
+    float* unary_chain, int unary_chain_length)
 {
     // Parallelize over spans and non-terminals
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -234,7 +199,7 @@ __global__ void cky_span_processing_kernel_order_2(
         if (left_score == -INFINITY) continue;
         
         // Process binary productions (A -> B C)
-        for (int s_C = 0; s_C <= S; s_C++) {  // Skip epsilon (0)
+        for (int s_C = 1; s_C <= S; s_C++) {  // Skip epsilon (0)
             float right_score = cky[s_C * MAX_SEQ_LEN * MAX_SEQ_LEN + (k + 1) * MAX_SEQ_LEN + j];
             if (right_score == -INFINITY) continue;
             
@@ -261,28 +226,40 @@ __global__ void cky_span_processing_kernel_order_2(
         atomicMaxFloat(&results[index], total_score);
     }
 
-    // __syncthreads();
+    __syncthreads();
+
+
+    // reduce s_B axis
+    if(blockIdx.z * blockDim.z + threadIdx.z == 0){
+        for(int s = 1; s <= S; s++){
+            cky[s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j] =
+                logsumexpf(
+                    cky[s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j], 
+                    results[
+                        s_A * (S + 1) * MAX_SEQ_LEN * MAX_SEQ_LEN + 
+                        s_B * MAX_SEQ_LEN * MAX_SEQ_LEN + 
+                        i * MAX_SEQ_LEN +
+                        j]
+                );
+        }
+    }
+
+    __syncthreads();
 
 
 
-
-    // // Process unary rules in parallel (A -> B)
-    // if (threadIdx.x == 0 && threadIdx.y == 0 && threadIdx.z == 0) {
-    //     for (int s_A_unary = 0; s_A_unary <= S; s_A_unary++) {
-    //         for (int s_B_unary = 0; s_B_unary <= S; s_B_unary++) {
-    //             float rule = grammar[s_A_unary * grammar_stride + s_B_unary * (S + 1)];
-    //             float cky_score = results[s_A_unary * (S + 1) * (MAX_SEQ_LEN * MAX_SEQ_LEN) + s_B_unary * (MAX_SEQ_LEN * MAX_SEQ_LEN) + i * MAX_SEQ_LEN + j];
-    //             if(s_A_unary == 1 && s_B_unary == 3 && i == 0 && j == 1){
-    //                 printf("rule = %lf, cky_score = %lf.\n", rule, cky_score);
-    //             }
-    //             if (cky_score != -INFINITY) {
-    //                 float new_score = rule + cky_score;
-                    
-    //                 atomicMaxFloat(&cky[s_A_unary * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j], new_score);
-    //             }
-    //         }
-    //     }
-    // }
+    // Process unary rules (A -> B)
+    if(s_A == 0 && s_B == 0){
+        for(int unary_rule_id_in_chain = 0; unary_rule_id_in_chain < unary_chain_length; unary_rule_id_in_chain += 2){
+            int unary_rule_s_A = unary_chain[unary_rule_id_in_chain];
+            int unary_rule_s_B = unary_chain[unary_rule_id_in_chain + 1];
+            cky[unary_rule_s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j]
+                = logsumexpf(cky[unary_rule_s_A * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j], 
+                    cky[unary_rule_s_B * MAX_SEQ_LEN * MAX_SEQ_LEN + i * MAX_SEQ_LEN + j] + grammar[unary_rule_s_A * (S + 1) * (S + 1) + unary_rule_s_B * (S + 1)]
+                );
+        }
+    }
+    
 }
 
 void cuda_cky_algorithm(AlgorithmContext context) {
@@ -325,15 +302,11 @@ void cuda_cky_algorithm(AlgorithmContext context) {
     
     for(int span_length = 2; span_length < context.MAX_SEQ_LEN; span_length++) {
        
-        cky_span_processing_kernel_order_2<<<cky_gridDim, cky_blockDim>>>(
+        cky_span_processing_kernel<<<cky_gridDim, cky_blockDim>>>(
             span_length, context.S, context.MAX_SEQ_LEN, 
             context.CKY.ptr, context.grammar.ptr, context.intermediate_results_buffer.ptr);
         cudaDeviceSynchronize();
-        dim3 cky_blockDim_reduce_span(64, 4, 1);  // Each block has N x S x S threads
-        dim3 cky_gridDim_reduce_span((context.MAX_SEQ_LEN + 64 - 1) / 64, (context.S + 4 - 1) / 4, (context.S + 4 - 1) / 1); 
-    
-        cky_reduce_kernel_span<<<cky_gridDim_reduce_span, cky_blockDim_reduce_span>>>(context.S, context.MAX_SEQ_LEN, context.CKY.ptr, context.intermediate_results_buffer.ptr, span_length);
-
+       
         break;
 
     }
@@ -402,6 +375,10 @@ int main(int argc, char* argv[]) {
     initialize_buffers(context);
     cuda_gc->fill(intermediate_results_buffer, -INFINITY);
     cudaDeviceSynchronize();
+
+    auto inside_order_1_rule_iteration_path = generate_inside_perterminate_iteration_paths(parsed_pcfg);
+    
+
     __host_pt__ int* host_sequence = new int[MAX_SEQ_LEN];
     
     /* [fish people fish tanks]'s ID sequence == [10 9 10 11] + 1*/
