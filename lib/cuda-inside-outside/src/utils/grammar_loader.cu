@@ -35,7 +35,7 @@ __host_pt__ float* initialize_grammar_buffer_from_pcfg(pcfg* pcfg_data){
         for(auto& grammar_record: pcfg_data->grammar_items_map[lhs_symbol.first]){
             std::cout << "\t" << grammar_record.left << "->" <<
             grammar_record.right1 << " " << 
-            grammar_record.right2 << "[" << grammar_record.possibility << "]" <<
+            grammar_record.right2 << "[" << grammar_record.possibility << " (" << std::exp(grammar_record.possibility) << ")]" <<
             " ===> [" << 
             get_symbol_id(grammar_record.left) << ", " << get_symbol_id(grammar_record.right1) << ", "
                 << get_symbol_id(grammar_record.right2) << "]" << std::endl;

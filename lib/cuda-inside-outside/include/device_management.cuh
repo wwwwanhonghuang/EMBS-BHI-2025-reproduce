@@ -18,6 +18,15 @@ struct cuda_gc_managed_pt{
     }
 };
 
+
+template <typename T>
+__global__ void fill_kernel(T* data, size_t count, T value) {
+    size_t idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < count) {
+        data[idx] = value;
+    }
+}
+
 class CudaGC {
 public:
     // Template function to allocate memory on the device
@@ -56,5 +65,31 @@ public:
             std::cerr << "CUDA memory zeroing failed: " << cudaGetErrorString(err) << std::endl;
         }
     }
+
+
+
+    template <typename T>
+    void fill(cuda_gc_managed_pt<T>& ptr, T value) {
+        size_t count = ptr.element_count;
+
+        int threads_per_block = 256;
+        int blocks = (count + threads_per_block - 1) / threads_per_block;
+
+        fill_kernel<<<blocks, threads_per_block>>>(ptr.ptr, count, value);
+
+        cudaError_t err = cudaGetLastError();
+        if (err != cudaSuccess) {
+            std::cerr << "CUDA fill kernel launch failed: " << cudaGetErrorString(err) << std::endl;
+            return;
+        }
+
+        // Optional: wait for kernel to finish if needed synchronously
+        err = cudaDeviceSynchronize();
+        if (err != cudaSuccess) {
+            std::cerr << "CUDA fill kernel failed during execution: " << cudaGetErrorString(err) << std::endl;
+        }
+    }
+
+
 };
 #endif
