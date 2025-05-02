@@ -71,21 +71,6 @@ class BinaryTreeLSTM(nn.Module):
         self.embedding_model = input_embedding_model
         self.input_size = input_size
 
-    def forward(self, trees):
-        """
-        Args:
-            trees: A list of dictionaries representing the trees (output from collate_fn)
-        Returns:
-            logits: Classification logits (batch_size, num_classes)
-        """
-        def process_tree(tree):
-            h, c = self._recursive_forward(tree)
-            return self.classifier(h).squeeze(0)
-
-        batch_logits = [process_tree(tree) for tree in trees]
-        results = torch.stack(batch_logits)
-        return results
-
     # def forward(self, trees):
     #     """
     #     Args:
@@ -97,12 +82,32 @@ class BinaryTreeLSTM(nn.Module):
     #         h, c = self._recursive_forward(tree)
     #         return self.classifier(h).squeeze(0)
 
-    #     batch_logits = Parallel(n_jobs=-1)(delayed(process_tree)(tree) for tree in trees)
+    #     batch_logits = [process_tree(tree) for tree in trees]
     #     results = torch.stack(batch_logits)
     #     return results
 
+    def forward(self, trees):
+        """
+        Args:
+            trees: A list of dictionaries representing the trees (output from collate_fn)
+        Returns:
+            logits: Classification logits (batch_size, num_classes)
+        """
+        def process_tree(tree, index):
+            h, c, nodes, edges = self._recursive_forward(tree, index, [], [], None)
+            return self.classifier(h).squeeze(0), nodes, edges
 
-    def _recursive_forward(self, node):            
+        n = len(trees)
+
+        results = Parallel(n_jobs=16)(delayed(process_tree)(tree, index) for index, tree in enumerate(trees))
+        batch_logits, nodes, edges = zip(*results)
+        batch_logits = torch.stack(batch_logits)
+        return batch_logits, nodes, edges
+
+
+
+
+    def _recursive_forward(self, node, index, nodes, edges, parent_id = None):            
         """
         Recursively process a node and its children.
         Args:
@@ -115,12 +120,20 @@ class BinaryTreeLSTM(nn.Module):
         if not node:  # Base case: leaf node
             h = torch.zeros(1, self.hidden_size)
             c = torch.zeros(1, self.hidden_size)
-            
-            return h, c
+            new_node_id = len(nodes)
+            node_features = self.embedding_model([0, 0, 0, 0, 0, 0]).view(1, -1)
+            nodes.append(torch.cat([h, c, node_features], dim = 1))
+            if parent_id is not None:
+                edges.append([parent_id, new_node_id])
+            return h, c, nodes, edges
+    
+        node_id = len(nodes)
+        nodes.append(None)
+        
 
         # Process left and right children
-        h_left, c_left = self._recursive_forward(node.get("l", {}))
-        h_right, c_right = self._recursive_forward(node.get("r", {}))
+        h_left, c_left, nodes, edges = self._recursive_forward(node.get("l", {}), index, nodes, edges, node_id)
+        h_right, c_right, nodes, edges = self._recursive_forward(node.get("r", {}), index, nodes, edges, node_id)
     
         v = node["v"]
         if self.embedding_model:
@@ -130,5 +143,8 @@ class BinaryTreeLSTM(nn.Module):
 
         # Apply Tree-LSTM cell
         h, c = self.tree_lstm_cell(x, h_left, c_left, h_right, c_right)
-
-        return h, c
+        
+        nodes[node_id] = torch.cat([h, c, x], dim = 1)
+        if parent_id is not None:
+            edges.append([parent_id, node_id])
+        return h, c, nodes, edges

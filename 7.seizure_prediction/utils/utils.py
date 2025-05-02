@@ -1,4 +1,4 @@
-
+import numpy as np
 def calculate_metrics(conf_matrix):
     """
     Calculate accuracy, TPR, FPR, TNR, FNR, F1, and F2 from a confusion matrix.

@@ -44,7 +44,7 @@ $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences
 $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences/epileptic_eeg_dataset/normal_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentences/epileptic_eeg_dataset/normal_integrated_all_d2_s4.txt
 $ python sentence_plain_text_encoder.py --file_path ../data/recurrence_sentences/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ../data/recurrence_sentences/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4.txt
 ```
-Or run the `convert_npy_to_plain_text.sh` script with command `sh convert_npy_to_plain_text.sh`.
+Or run the `1_convert_npy_to_plain_text.sh` script with command `sh convert_npy_to_plain_text.sh`.
 
 
 ### 4.4 Convert microstate sequences to word sequences
@@ -57,10 +57,16 @@ The default configuration file should work^.
 
 ``` bash
 $ sh make_phase_converter.sh
-$ sh phase_space_reconstruction.sh
+$ sh 2_phase_space_reconstruction.sh
 ```
 
-### 4.5 Train PCFG
+
+### 4.5 Split Dataset
+``` bash
+$ sh 3_split_dataset.sh
+```
+
+### 4.6 Train PCFG
 Still we need prepare a configuration file.
 The default configuration file `4.pcfg_training/config_train.yaml` should work.
 

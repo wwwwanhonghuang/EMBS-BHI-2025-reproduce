@@ -5,14 +5,13 @@ import os
 from functools import lru_cache
 from utils.tree_helper import deserialize_tree
 
-class TreeDataset(Dataset):
-    
+class TreeDataset(Dataset):    
     def __init__(self, area_types, tree_records_base_path):
         super(TreeDataset, self).__init__()
         files = []
         labels = []
         self.label_map = {
-            'normal': 0,
+            'normal-retained': 0,
             'seizure': 1,
             'pre-epileptic': 2
         }

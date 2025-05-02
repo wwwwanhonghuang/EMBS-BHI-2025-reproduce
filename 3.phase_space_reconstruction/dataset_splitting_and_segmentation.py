@@ -109,7 +109,7 @@ def split_data(data, record_ids, sampling_frequency):
     return splitted_data
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-cf", "--configuration-file", type=str, default="./configs/epilepsy_all_person_intergrated.json")
+parser.add_argument("-cf", "--configuration-file", type=str, default="./configs/epilepsy_all_person_intergrated-dev.json")
 parser.add_argument("-i", "--index-only", type=bool, default=False)
 parser.add_argument("-of", "--out_splitted_fragments", type=bool, default=False)
 parser.add_argument("-om", "--out_integrated_fragments", type=bool, default=True)

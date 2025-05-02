@@ -70,7 +70,7 @@ def store(maps, segmentation, gev, preprocessing_desc, person_id):
 ## ------------------------------- MAIN PART ------------------------------
 parser = argparse.ArgumentParser()
 parser.add_argument("-dic", "--database_index_configuration", 
-    default="./configs/config-all-person-microstate.json")
+    default="./configs/config-all-person-microstate-dev.json")
 args = parser.parse_args()
 
 with open(args.database_index_configuration) as f: 
@@ -133,17 +133,20 @@ for person_index in record_indexes:
                 print(f"End of [Preprocessing {index}: {slice_begin // block_size + 1}/{int(np.ceil(data_count / block_size))}]... name = {preprocessing_pipeline_item[0]}")
             
             results.append(data)
+        
         data = mne.concatenate_raws(results)
+        
         del results
         
         for index, postprocessing_pipeline_item in enumerate(post_merge_pipeline):
             print(f"[Post Merging Preprocessing {index}: {slice_begin // block_size + 1}/{int(np.ceil(data_count / block_size))}]... name = {postprocessing_pipeline_item[0]}")
             postprocessing_name = postprocessing_pipeline_item[0]
             postprocessing_arguments = postprocessing_pipeline_item[1]
-            PostprocessingController.preprocessing(data, postprocessing_name, postprocessing_arguments)
+            PreprocessingController.preprocessing(data, postprocessing_name, postprocessing_arguments)
         
         if save_preprocessed_data:
             mne.export.export_raw(expect_preprocessed_file_path, data, overwrite=True)
+    
     
     # PART II: train microstates
     recording = eeg_recording.SingleSubjectRecording("0", data)
