@@ -25,6 +25,13 @@ public:
     cuda_gc_managed_pt<T> allocate(int element_count) {
         // Allocate device memory using cudaMalloc
         __device_pt__ T* d_ptr = nullptr;
+        size_t freeMem, totalMem;
+        cudaMemGetInfo(&freeMem, &totalMem);
+        std::cout << "[CUDA GC] Try Allocate " << element_count << " * " << sizeof(T) << " B" << " = "
+        << element_count * sizeof(T) / (1024.0 * 1024.0) << " MB" << std::endl;
+
+        printf("Free memory: %zu bytes\n", freeMem);
+        printf("Total memory: %zu bytes\n", totalMem);
         cudaError_t err = cudaMalloc((void**)&d_ptr, element_count * sizeof(T));
         if (err != cudaSuccess) {
             printf("CUDA memory allocation failed: %s\n", cudaGetErrorString(err));

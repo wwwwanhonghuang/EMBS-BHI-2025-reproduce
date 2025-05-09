@@ -3,12 +3,12 @@ import os
 import sys
 import torch
 from torch.utils.data import Dataset, DataLoader, DistributedSampler, WeightedRandomSampler
-from torch_geometric.data import Data, Dataset
+from torch_geometric.data import Data, Dataset, Batch
 from torch_geometric.loader import DataLoader
 import torch.nn as nn
 from functools import lru_cache
-
-tree_records_base_path = "../data/serialized_tree"
+import json
+tree_records_base_path = "/data1/pcfg-log/serialized_tree"
 
 class SyntaxTreeNode:
     def __init__(self, value, left=None, right=None):
@@ -22,6 +22,53 @@ class SyntaxTreeNode:
     def __repr__(self):
         return f"SyntaxTreeNode(value={self.value}, left={self.left}, right={self.right})"
 
+
+class TreeGNN(torch.nn.Module):
+    def __init__(self, hidden_dim=128, num_classes = 3):
+        super(TreeGNN, self).__init__()
+        # Define embedding layers
+        self.dim0_embedding = nn.Embedding(num_embeddings=96, embedding_dim=32)
+        self.dim1_embedding = nn.Embedding(num_embeddings=96, embedding_dim=32)
+        self.dim2_embedding = nn.Embedding(num_embeddings=96, embedding_dim=32)
+        self.dim5_embedding = nn.Embedding(num_embeddings=182, embedding_dim=32)
+
+        # Define GNN layers
+        self.conv1 = GCNConv(129, hidden_dim)  # Input size: 1 + 32*4 = 129
+        self.conv2 = GCNConv(hidden_dim, hidden_dim)
+        self.conv3 = GCNConv(hidden_dim, hidden_dim)
+
+        self.bn1 = nn.BatchNorm1d(hidden_dim)
+        self.bn2 = nn.BatchNorm1d(hidden_dim)
+        self.bn3 = nn.BatchNorm1d(hidden_dim)
+        self.fc = nn.Linear(hidden_dim, num_classes)
+
+
+    def forward(self, x, edge_index, batch):
+        # Separate features
+        possibility = x[:, 0].unsqueeze(1)  # Shape: [num_nodes, 1]
+        dim0 = x[:, 1].long()
+        dim1 = x[:, 2].long()
+        dim2 = x[:, 3].long()
+        dim5 = x[:, 4].long()
+
+        # Embed categorical features
+        def normalize_symbol(sym):
+            return (sym & 0x0FFF) * (sym != 0xFFFF)
+        dim0_embedded = self.dim0_embedding(normalize_symbol(dim0))  # Shape: [num_nodes, 16]
+        dim1_embedded = self.dim1_embedding(normalize_symbol(dim1))  # Shape: [num_nodes, 16]
+        dim2_embedded = self.dim2_embedding(normalize_symbol(dim2))  # Shape: [num_nodes, 16]
+        dim5_embedded = self.dim5_embedding(normalize_symbol(dim5))  # Shape: [num_nodes, 16]
+
+        # Concatenate all features
+        x = torch.cat([possibility, dim0_embedded, dim1_embedded, dim2_embedded, dim5_embedded], dim=1)
+        # Pass through GNN layers
+        x = F.relu(self.bn1(self.conv1(x, edge_index)))  # Shape: [num_nodes, hidden_dim]
+        x = F.relu(self.bn2(self.conv2(x, edge_index)))          # Shape: [num_nodes, output_dim]
+        x = F.relu(self.bn3(self.conv3(x, edge_index)))
+        x = global_mean_pool(x, batch)  # Aggregate node features into graph-level features
+
+        x = self.fc(x)
+        return x
 
 def deserialize_tree(tree_str):
     tokens = tree_str.split()
@@ -38,12 +85,12 @@ def deserialize_tree(tree_str):
 
         # Extract the 6 values for the current node
         value = (
-            int(tokens[index]),     # std::get<0>
-            int(tokens[index + 1]), # std::get<1>
-            int(tokens[index + 2]), # std::get<2>
+            int(tokens[index]) & 0xFFFF,     # std::get<0>
+            int(tokens[index + 1]) & 0xFFFF, # std::get<1>
+            int(tokens[index + 2]) & 0xFFFF, # std::get<2>
             int(tokens[index + 3]), # std::get<3>
             float(tokens[index + 4]), # std::get<4>
-            int(tokens[index + 5])  # std::get<5>
+            int(tokens[index + 5]) & 0xFFFF # std::get<5>
         )
         index += 6
 
@@ -56,7 +103,7 @@ def deserialize_tree(tree_str):
     return _deserialize_helper()
 
 
-def tree_to_graph(root):
+def tree_to_graph(root, device = 'cpu'):
     """
     Convert a SyntaxTreeNode to a PyTorch Geometric graph.
     """
@@ -107,39 +154,24 @@ def tree_to_graph(root):
         
         # Concatenate all features into a single vector
         node_features = torch.tensor([possibility, feature_0, feature_1, feature_2, feature_5], dtype = torch.float)
-        x.append(node_features)
+        x.append(node_features.to(device))
 
-    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous()  # Edge indices
+    edge_index = torch.tensor(edges, dtype=torch.long).t().contiguous().to(device)  # Edge indices
 
     return Data(
         x=torch.stack(x),  # Node feature matrix
         edge_index=edge_index # Edge index
     )
-    
-# Example serialized tree string
-tree_str = "1 2 3 4 5.0 6 7 8 9 10 11.0 12 # # #"
 
-# Deserialize the tree
-root = deserialize_tree(tree_str)
-print(root)
-# Convert the tree to a graph
-graph = tree_to_graph(root)
-
-# Print the graph
-print(graph)
-print("Node features:", graph.x)
-print("Edge index:", graph.edge_index)
-
-from torch_geometric.data import Batch
 
 class TreeDataset(Dataset):
     
-    def __init__(self, area_types):
+    def __init__(self, area_types, device = 'cpu'):
         super(TreeDataset, self).__init__()
         files = []
         labels = []
         self.label_map = {
-            'normal-retained': 0,
+            'normal-test': 0,
             'seizure': 1,
             'pre-epileptic': 2
         }
@@ -154,11 +186,11 @@ class TreeDataset(Dataset):
         self.files = files
         self.labels = labels
         assert(len(self.files) == len(self.labels))
+        self.device = device
 
     def __len__(self):
         return len(self.files)
 
-    @lru_cache(maxsize=None)
     def __getitem__(self, idx):
         if(idx >= len(self.files)):
             raise ValueError(f'idx = {idx} >= total amount of files = {len(self.files)}')
@@ -166,15 +198,14 @@ class TreeDataset(Dataset):
         with open(file, "r") as f:
             serialized_tree = f.read().strip()
         root = deserialize_tree(serialized_tree)
-        graph = tree_to_graph(root)
-        label = torch.tensor(self.labels[idx], dtype=torch.long)
-        
+        graph = tree_to_graph(root, self.device)
+        label = torch.tensor(self.labels[idx], dtype=torch.long).to(self.device)
         return {"graph": graph, "label":label}
 
 
-dataset_types = ["normal-retained", "seizure", "pre-epileptic"]
-
-dataset = TreeDataset(dataset_types)
+dataset_types = ["normal-test", "seizure", "pre-epileptic"]
+device = 'cuda:0'
+dataset = TreeDataset(dataset_types, device=device)
 
 from sklearn.model_selection import train_test_split
 import torch
@@ -214,7 +245,6 @@ sample_weights = [class_weights[label] for label in train_labels]
 # Create the sampler for the training set
 train_sampler = WeightedRandomSampler(sample_weights, len(train_labels), replacement=True)
 
-
 # Print sizes to confirm
 print(f"Train size: {len(train_subset)}")
 print(f"Validation size: {len(val_subset)}")
@@ -232,10 +262,10 @@ def custom_collate(batch):
     labels = [item["label"] for item in batch]
     
     # Batch graphs using PyTorch Geometric's Batch class
-    batched_graphs = Batch.from_data_list(graphs)
+    batched_graphs = Batch.from_data_list(graphs).to(device)
     
     # Stack labels into a tensor
-    batched_labels = torch.stack(labels)
+    batched_labels = torch.stack(labels).to(device)
     
     return batched_graphs, batched_labels
     
@@ -268,64 +298,20 @@ from torch_geometric.nn import global_mean_pool
 
 
 
-class TreeGNN(torch.nn.Module):
-    def __init__(self, hidden_dim=128, num_classes = 3):
-        super(TreeGNN, self).__init__()
-        # Define embedding layers
-        self.dim0_embedding = nn.Embedding(num_embeddings=96, embedding_dim=32)
-        self.dim1_embedding = nn.Embedding(num_embeddings=96, embedding_dim=32)
-        self.dim2_embedding = nn.Embedding(num_embeddings=96, embedding_dim=32)
-        self.dim5_embedding = nn.Embedding(num_embeddings=182, embedding_dim=32)
+model = TreeGNN(hidden_dim = 256,  num_classes = 3).to(device)
 
-        # Define GNN layers
-        self.conv1 = GCNConv(129, hidden_dim)  # Input size: 1 + 32*4 = 129
-        self.conv2 = GCNConv(hidden_dim, hidden_dim)
-        self.conv3 = GCNConv(hidden_dim, hidden_dim)
-
-        self.bn1 = nn.BatchNorm1d(hidden_dim)
-        self.bn2 = nn.BatchNorm1d(hidden_dim)
-        self.bn3 = nn.BatchNorm1d(hidden_dim)
-        self.fc = nn.Linear(hidden_dim, num_classes)
-
-
-    def forward(self, x, edge_index, batch):
-        # Separate features
-        possibility = x[:, 0].unsqueeze(1)  # Shape: [num_nodes, 1]
-        dim0 = x[:, 1].long()
-        dim1 = x[:, 2].long()
-        dim2 = x[:, 3].long()
-        dim5 = x[:, 4].long()
-
-        # Embed categorical features
-        dim0_embedded = self.dim0_embedding(dim0)  # Shape: [num_nodes, 16]
-        dim1_embedded = self.dim1_embedding(dim1)  # Shape: [num_nodes, 16]
-        dim2_embedded = self.dim2_embedding(dim2)  # Shape: [num_nodes, 16]
-        dim5_embedded = self.dim5_embedding(dim5)  # Shape: [num_nodes, 16]
-
-        # Concatenate all features
-        x = torch.cat([possibility, dim0_embedded, dim1_embedded, dim2_embedded, dim5_embedded], dim=1)
-        # Pass through GNN layers
-        x = F.relu(self.bn1(self.conv1(x, edge_index)))  # Shape: [num_nodes, hidden_dim]
-        x = F.relu(self.bn2(self.conv2(x, edge_index)))          # Shape: [num_nodes, output_dim]
-        x = F.relu(self.bn3(self.conv3(x, edge_index)))
-        x = global_mean_pool(x, batch)  # Aggregate node features into graph-level features
-
-        x = self.fc(x)
-        return x
-
-
-model = TreeGNN(hidden_dim=256,  num_classes = 3)
 import torch
 import torch.optim as optim
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
 import numpy as np
 
-class_weights = torch.tensor([1.0, 1.0, 1.0])  # Higher weight for class 1 (seizure)
+class_weights = torch.tensor([1.0, 1.0, 1.0]).to(device)  # Higher weight for class 1 (seizure)
 criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
 
 # Cross-Entropy Loss for classification
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
+
 def calculate_metrics(conf_matrix):
     """
     Calculate accuracy, TPR, FPR, TNR, FNR, F1, and F2 from a confusion matrix.
@@ -374,6 +360,8 @@ def calculate_metrics(conf_matrix):
     
     return metrics
 
+metrics_dict = {}
+
 # Training loop
 for epoch in range(100):
     model.train()
@@ -387,7 +375,7 @@ for epoch in range(100):
         # Forward pass: get predictions
         graphs, labels = batch['graph'], batch['label']
         output = model(graphs.x, graphs.edge_index, graphs.batch)
-        
+
         # Compute the loss
         loss = criterion(output, labels)
         
@@ -433,4 +421,15 @@ for epoch in range(100):
     
     print(f"Validation Loss: {val_loss:.4f}")
     print(f"Validation Metrics: {val_metrics}")
+    
+    torch.save(model.state_dict(), f'gcn_model_epoch_{epoch}.pth')
+    metrics_dict[epoch] = {
+        'train_loss': total_loss,
+        'train_metrics': train_metrics,
+        'val_loss': val_loss,
+        'val_metrics': val_metrics
+    }
+    with open('metrics.json', 'w') as f:
+        json.dump(metrics_dict, f, indent=4)
+
     

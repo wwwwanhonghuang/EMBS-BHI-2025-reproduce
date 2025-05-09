@@ -15,7 +15,7 @@ def to_segment_sequence(microstate_sequence, keep_num_repetitions = False):
             repetitions.append(current_repetition)
             pre_state = state
             current_repetition = 0
-        repetitions += 1
+        current_repetition += 1
     if keep_num_repetitions:
         return_value = (np.array(segment_sequence), np.array(repetitions))
         assert len(segment_sequence) == len(repetitions)

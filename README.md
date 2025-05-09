@@ -110,3 +110,7 @@ $ conda activate embc2025 requirement.txt
   + **Output**
     + Seizure Prediction Results
 
+
+
+## Current Problems
+1. Float precision of pcfg rule possibility.

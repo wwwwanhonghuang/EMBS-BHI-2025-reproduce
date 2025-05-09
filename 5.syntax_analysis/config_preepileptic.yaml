@@ -1,12 +1,12 @@
 syntax_analysis:
-  grammar_file: "../../data/pcfg/grammar-trained.pcfg"
-  input: "../../data/recurrence_sentences/epileptic_eeg_dataset/pre-epileptic_integrated_all_d2_s4_converted.txt"
+  grammar_file: "../data/pcfg/grammar-trained.pcfg"
+  input: "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/pre-epileptic_integrated_all_d2_s4_converted.txt"
+  repetition: "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/pre-epileptic_integrated_all_d2_s4_repetition.txt"
   log_intervals: 1000000
-  log_path: "../../data/logs/pre-epileptic/"
-  report_path: "../../data/reports/pre-epileptic/"
+  log_path: "/data1/pcfg-log/logs/pre-epileptic/"
+  report_path: "/data1/pcfg-log/reports/pre-epileptic/"
   serialize_to_files: true
-  tree_serialization_path: "../../data/serialized_tree/pre-epileptic/"
+  tree_serialization_path: "/data1/pcfg-log/serialized_tree/pre-epileptic/"
   report_statistics: false
   sentence_from: -1
   sentence_to: -1
-

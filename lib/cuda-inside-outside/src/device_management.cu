@@ -1,6 +1,8 @@
 
 #include "device_management.cuh"
 #include <iostream>
+#include <thrust/device_ptr.h>
+#include <thrust/fill.h>
 
 int select_cuda_device(int device_id){
     // Query the number of available CUDA devices
@@ -16,4 +18,15 @@ int select_cuda_device(int device_id){
     // Set the device using the provided device ID
     cudaSetDevice(device_id);
     return 0;
+}
+
+template <>
+void CudaGC::fill(cuda_gc_managed_pt<float>& ptr, float value) {
+    float* data = ptr.ptr;
+    size_t count = ptr.element_count;
+
+    thrust::device_ptr<float> dev_ptr(data);
+    thrust::fill(dev_ptr, dev_ptr + count, value);
+
+    cudaDeviceSynchronize(); 
 }
