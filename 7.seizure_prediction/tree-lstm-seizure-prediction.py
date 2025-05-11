@@ -74,12 +74,9 @@ class TreeGNN(torch.nn.Module):
         return x
 
 
-# model = TreeGNN(hidden_dim=256,  num_classes = 3)
-
-
 n_classes = 3
 tree_records_base_path = "../data/serialized_tree"
-dataset_types = ["normal-retained", "seizure", "pre-epileptic"]
+dataset_types = ["normal", "seizure", "pre-epileptic"]
 dataset = TreeDataset(dataset_types, tree_records_base_path)
 
 dataset_splitter = RatioBasedDataSetSplitter(dataset)
