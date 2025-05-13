@@ -76,7 +76,7 @@ def split_data(data, record_ids, sampling_frequency):
     '''
     seizures = dataset.get_seizure_ranges_in_time_offsets(record_ids)
     
-    length_of_pre_epileptic_zone = args.pre_epileptic_zone
+    length_of_pre_epileptic_zone = int(args.pre_epileptic_zone)
     seizures = sorted(seizures, key=lambda x: x[0])
     assert(all(seizure[1] <= data.shape[0] for seizure in seizures))
 
@@ -138,7 +138,7 @@ def split_data(data, record_ids, sampling_frequency):
 parser = argparse.ArgumentParser()
 parser.add_argument("-dic", "--database_index_configuration", 
     default="./configs/config-all-person-microstate-dev.json")
-parser.add_argument("--pre_epileptic_zone", default=60 * 2)
+parser.add_argument("--pre_epileptic_zone", default=60 * 2, type=int)
 parser.add_argument("--no_normal_only", action="store_true")
 parser.add_argument("--force_repreprocessing", action="store_true")
 
@@ -228,6 +228,7 @@ for person_index in record_indexes:
     if not args.no_normal_only:
         print(f'In training microstate in normal area only mode.')
         sampling_freq = int(data.info['sfreq'])
+        print(f'sampling_freq = {sampling_freq}, type = {type(sampling_freq)}')
         splitted_data = split_data(data.get_data().T, record_index_list, sampling_freq)
         normal_areas = splitted_data['normal'] # a list of ndarray, shaoe = (T_i, n_channel)
         merged_normal_area = np.concatenate(normal_areas, axis=0)
