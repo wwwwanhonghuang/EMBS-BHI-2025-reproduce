@@ -10,4 +10,4 @@ if [ "$FORCE_REPREPROCESSING" -eq 1 ]; then
     FLAGS="$FLAGS --force_repreprocessing"
 fi
 
-python microstate_extraction.py $FLAGS
+python microstate_extraction.py $FLAGS --no_normal_only

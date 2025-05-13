@@ -242,7 +242,7 @@ for person_index in record_indexes:
         recording = eeg_recording.SingleSubjectRecording("0", raw_normal)
     else:
         recording = eeg_recording.SingleSubjectRecording("0", data)
-
+        print(data.get_data().shape)
     print(f"Begin training microstates. Result will save in '{store_base_path}'")
     
     print(f" -- Search Microstate Amount from {microstate_search_range[0]} to {microstate_search_range[1]}")

@@ -1,0 +1,12 @@
+NORMAL_SENTENCE_FILE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/normal_integrated_all_d2_s4_converted.txt
+SEIZURE_SENTENCE_FILE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/seizure_integrated_all_d2_s4_converted.txt
+PREEPILEPTIC_SENTENCE_FILE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/pre-epileptic_integrated_all_d2_s4_converted.txt
+
+NORMAL_REPETITION_FILE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/normal_integrated_all_d2_s4_repetition.txt
+SEIZURE_REPETITION_FILE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/seizure_integrated_all_d2_s4_repetition.txt
+PREEPILEPTIC_REPETITION_FILE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/pre-epileptic_integrated_all_d2_s4_repetition.txt
+
+
+SAVE_BASE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/all_zones
+
+python split_all_data.py --output_base_path $SAVE_BASE_PATH --normal_sentence_file $NORMAL_SENTENCE_FILE_PATH --seizure_sentence_file $SEIZURE_SENTENCE_FILE_PATH --preepileptic_sentence_file $PREEPILEPTIC_SENTENCE_FILE_PATH --preepileptic_repetition_file $PREEPILEPTIC_REPETITION_FILE_PATH --seizure_repetition_file $SEIZURE_REPETITION_FILE_PATH --normal_repetition_file $NORMAL_REPETITION_FILE_PATH --percent 80
