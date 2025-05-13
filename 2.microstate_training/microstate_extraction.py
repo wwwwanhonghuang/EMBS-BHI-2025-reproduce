@@ -138,7 +138,7 @@ def split_data(data, record_ids, sampling_frequency):
 parser = argparse.ArgumentParser()
 parser.add_argument("-dic", "--database_index_configuration", 
     default="./configs/config-all-person-microstate-dev.json")
-parser.add_argument("--pre_epileptic_zone", default=60 * 5)
+parser.add_argument("--pre_epileptic_zone", default=60 * 2)
 parser.add_argument("--no_normal_only", action="store_true")
 parser.add_argument("--force_repreprocessing", action="store_true")
 

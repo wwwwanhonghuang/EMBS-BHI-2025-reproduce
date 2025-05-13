@@ -1,5 +1,5 @@
 syntax_analysis:
-  grammar_file: "../data/pcfg/grammar-trained.pcfg"
+  grammar_file: "../data/grammar-trained.pcfg"
   input: "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/seizure_integrated_all_d2_s4_converted.txt"
   repetition: "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/seizure_integrated_all_d2_s4_repetition.txt"
   log_intervals: -1

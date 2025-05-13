@@ -20,8 +20,6 @@ microstate_file_path = args.microstate_file_path
 print(f"Load EEG record from file {record_file_path}")
 data = mne.io.read_raw(record_file_path)
 
-
-
 # GEV of training result of previous amount of microstates. 
 maps = np.load(microstate_file_path)
 (peaks, gfp_curve) = get_gfp_peaks(
