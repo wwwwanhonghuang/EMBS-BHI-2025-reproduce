@@ -143,6 +143,10 @@ parser.add_argument("--no_normal_only", action="store_true")
 parser.add_argument("--force_repreprocessing", action="store_true")
 
 args = parser.parse_args()
+print(f'pre_epileptic_zone = {args.pre_epileptic_zone}')
+print(f'configuration file = {args.database_index_configuration}')
+print(f'no_normal_only = {args.no_normal_only}')
+print(f'force_repreprocessing = {args.force_repreprocessing}')
 
 with open(args.database_index_configuration) as f: 
     data = f.read() 
