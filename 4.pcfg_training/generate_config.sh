@@ -33,6 +33,7 @@ main:
   n_epochs: 1
   limit_n_sentences: -1
   validation_only: true
+  grammar_weight_origin_in_log_form: true
 EOF
 
 echo "Configuration written to $CONFIG_FILE"
