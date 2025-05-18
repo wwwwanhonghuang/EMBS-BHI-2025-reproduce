@@ -74,3 +74,12 @@ The default configuration file `4.pcfg_training/config_train.yaml` should work.
 $ cd <repository-root>/lib/pcfg-cky-inside-outside
 $ ./bin/train_pcfg ../../4.pcfg_training/config_train.yaml
 ```
+
+
+
+### 4.7 Generate Evaluation Configuration
+Example:
+
+``` bash
+bash generate_config.sh ../data/pcfg/exp1-global-ms-all-zones/0-2/grammar_log_partition_1_epoch_0.pcfg ../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/all_zones/val_sentences.txt ../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/all_zones/val_repetitions.txt 
+```
