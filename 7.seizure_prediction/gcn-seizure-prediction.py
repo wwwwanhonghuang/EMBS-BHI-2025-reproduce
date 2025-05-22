@@ -64,7 +64,7 @@ dataset = GCNTreeDataset(tree_records_base_path, dataset_types, device=device)
 # First, get all indices grouped by class
 class_indices = defaultdict(list)
 for idx, label in enumerate(dataset.labels):
-    class_indices[label].append(idx)
+    class_indices[label].append(int(idx))
 
 num_class0_keep = len(class_indices[0])  
 class0_indices = np.random.choice(class_indices[0], size=num_class0_keep, replace=False) # normal area
@@ -76,7 +76,8 @@ if not args.binary:
     class2_indices = class_indices[2]
 else:
     class2_indices = []
-    class0_indices += class_indices[2] # treat preepileptic area as normal
+    class0_indices = class_indices[0] + class_indices[2] # treat preepileptic area as normal
+    class0_indices = [int(idx) for idx in class0_indices]
 
 # Split each class individually
 class0_train, class0_val, class0_test = split_class_indices(class0_indices)
@@ -106,22 +107,21 @@ if not args.binary:
         'val': len(class2_val),
         'test': len(class2_test)
     }
-    
+ 
 if not args.binary:
     print(cnt_class_0, cnt_class_1, cnt_class_2)
 else:
     print(cnt_class_0, cnt_class_1)
 
 # Merge splits across classes
-train_idx = np.concatenate([class0_train, class1_train, class2_train])
-val_idx = np.concatenate([class0_val, class1_val, class2_val])
-test_idx = np.concatenate([class0_test, class1_test, class2_test])
-
-if(len(set(dataset.labels[i] for i in train_idx))) < 3:
+train_idx = np.concatenate([class0_train, class1_train, class2_train if not args.binary else []])
+val_idx = np.concatenate([class0_val, class1_val, class2_val if not args.binary else []])
+test_idx = np.concatenate([class0_test, class1_test, class2_test if not args.binary else []])
+if(len(set(dataset.labels[int(i)] for i in train_idx))) < 3:
     print("Warning: train set contains classes less than 3.")
-if(len(set(dataset.labels[i] for i in val_idx))) < 3:
+if(len(set(dataset.labels[int(i)] for i in val_idx))) < 3:
     print("Warning: validation set contains classes less than 3.")
-if(len(set(dataset.labels[i] for i in val_idx))) < 3:
+if(len(set(dataset.labels[int(i)] for i in val_idx))) < 3:
     print("Warning: test set contains classes less than 3.")
 
 # Create subsets
@@ -134,7 +134,7 @@ if not args.binary:
     if(len(set(train_labels))) < 3:
         print("Warning: test set contains classes less than 3.")
 else:
-    train_labels = [1 if dataset.labels[i] == 1 else 0 for i in train_idx]
+    train_labels = [1 if dataset.labels[int(i)] == 1 else 0 for i in train_idx]
 
 # Calculate class counts for the training set
 if not args.binary:
@@ -151,9 +151,12 @@ print(f'class counts: {class_counts}')
 # effective_num = [1.0 - np.exp(-beta * np.log(count + 1)) for count in class_counts]
 # class_weights = [(1.0 - beta) / en for en in effective_num]
 
-class_weights = 1.0 / (np.array(class_counts) + 1e-5)  # Add epsilon to avoid division by zero
-class_weights = class_weights / np.sum(class_weights)  # Normalize (optional)
+class_weights = 1 / np.sqrt(class_counts)  # Inverse square root weighting
+class_weights = class_weights / class_weights.sum()  # Normalize
 
+# class_weights = 1.0 / (np.array(class_counts) + 1e-5)  # Add epsilon to avoid division by zero
+
+# class_weights = class_weights / np.sum(class_weights)  # Normalize (optional)
 # Calculate sample weights for the training set
 sample_weights = [class_weights[label] for label in train_labels]
 print(f"class weights = {class_weights}")
@@ -177,11 +180,13 @@ def custom_collate(batch):
         Batched graphs and labels.
     """
     graphs = [item["graph"] for item in batch]
+    
+    '''
     if not binary_classification:
         labels = [item["label"] for item in batch]
     else:
         labels = [1 if item["label"] == 1 else 0 for item in batch]
-
+    '''
     
     # Batch graphs using PyTorch Geometric's Batch class
     batched_graphs = Batch.from_data_list(graphs).to(device)
@@ -194,7 +199,7 @@ def custom_collate(batch):
 # Create DataLoader for the training set with WeightedRandomSampler
 train_loader = DataLoader(
     train_subset,
-    batch_size=64,
+    batch_size=256,
     sampler=train_sampler,
     collate_fn=custom_collate  # Use custom collate function
 )
@@ -202,14 +207,14 @@ train_loader = DataLoader(
 # Create DataLoader for the validation and test sets without any sampling (just shuffle them)
 val_loader = DataLoader(
     val_subset,
-    batch_size=64,
+    batch_size=256,
     shuffle=True,
     collate_fn=custom_collate  # Use custom collate function
 )
 
 test_loader = DataLoader(
     test_subset,
-    batch_size=64,
+    batch_size=256,
     shuffle=True,
     collate_fn=custom_collate  # Use custom collate function
 )
@@ -222,12 +227,15 @@ else:
 model = TreeGNN(hidden_dim = 256,  num_classes = num_classes).to(device)
 
 if args.binary:
-    criterion = torch.nn.BCEWithLogitsLoss()
+    # criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.CrossEntropyLoss()
+
+
 else:
-    # class_weights = torch.tensor([1.0, 1.0, 1.0]).to(device)
-    # criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
-#    criterion = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(device))
-    criterion = FocalLoss(alpha=[1.0, 5.0, 5.0], gamma=2.0)
+    class_weights = torch.tensor([1.0, 1.0, 1.0]).to(device)
+    criterion = torch.nn.CrossEntropyLoss()
+ #criterion = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(device))
+    # criterion = FocalLoss(alpha=[1.0, 1.0, 1.0], gamma=2.0)
 
 # Cross-Entropy Loss for classification
 optimizer = optim.Adam(model.parameters(), lr=0.0001, weight_decay=1e-4)
@@ -248,9 +256,10 @@ for epoch in range(n_epochs):
         # Forward pass: get predictions
         graphs, labels = batch['graph'], batch['label']
         output = model(graphs.x, graphs.edge_index, graphs.batch)
+        if args.binary:
+            labels[labels == 2] = 0
         # Compute the loss
         loss = criterion(output, labels)
-        
         # Backward pass
         loss.backward()
         optimizer.step()
@@ -279,9 +288,11 @@ for epoch in range(n_epochs):
         for batch in tqdm(val_loader):
             graphs, labels = batch['graph'], batch['label']
             output = model(graphs.x, graphs.edge_index, graphs.batch)
+            if args.binary:
+                labels[labels == 2] = 0
             loss = criterion(output, labels)
             val_loss += loss.item()
-            
+             
             # Store predictions and labels for metrics
             preds = torch.argmax(output, dim=1)
             val_preds.extend(preds.cpu().numpy())
@@ -305,6 +316,8 @@ for epoch in range(n_epochs):
         for batch in tqdm(test_loader):
             graphs, labels = batch['graph'], batch['label']
             output = model(graphs.x, graphs.edge_index, graphs.batch)
+            if args.binary:
+                labels[labels == 2]  = 0
             loss = criterion(output, labels)
             test_loss += loss.item()
             
