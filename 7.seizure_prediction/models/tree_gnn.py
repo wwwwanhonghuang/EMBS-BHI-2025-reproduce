@@ -6,7 +6,7 @@ from torch_geometric.nn import global_mean_pool
 import torch.nn.functional as F
 
 class TreeGNN(torch.nn.Module):
-    def __init__(self, hidden_dim=128, num_classes = 3):
+    def __init__(self, hidden_dim=128, num_classes = 3, use_classification_layer = True):
         super(TreeGNN, self).__init__()
         # Define embedding layers
         self.dim0_embedding = nn.Embedding(num_embeddings=96, embedding_dim=32)
@@ -22,7 +22,11 @@ class TreeGNN(torch.nn.Module):
         self.bn1 = nn.BatchNorm1d(hidden_dim)
         self.bn2 = nn.BatchNorm1d(hidden_dim)
         self.bn3 = nn.BatchNorm1d(hidden_dim)
-        self.fc = nn.Linear(hidden_dim, num_classes)
+        if use_classification_layer:
+            self.fc = nn.Linear(hidden_dim, num_classes)
+        else:
+            self.fc = None
+        self.use_classification_layer = use_classification_layer
 
 
     def forward(self, x, edge_index, batch):
@@ -48,5 +52,81 @@ class TreeGNN(torch.nn.Module):
         x = F.relu(self.bn3(self.conv3(x, edge_index)))
         x = global_mean_pool(x, batch)  # Aggregate node features into graph-level features
 
-        x = self.fc(x)
+        if self.use_classification_layer:
+            x = self.fc(x)
         return x
+    
+    
+import torch
+import torch.nn as nn
+from torch_geometric.nn import GCNConv, global_mean_pool
+
+class HighOrderTreeSequentialGCNModel(nn.Module):
+    def __init__(self, 
+                 gcn_hidden_dim=256,
+                 lstm_hidden_dim=128,
+                 num_classes=3,
+                 num_lstm_layers=2,
+                 dropout=0.2):
+        super(HighOrderTreeSequentialGCNModel, self).__init__()
+        
+        # TreeGNN module (without final classification layer)
+        self.tree_gnn = TreeGNN(
+            hidden_dim=gcn_hidden_dim,
+            num_classes=num_classes,
+            use_classification_layer=False  # We'll do classification after LSTM
+        )
+        
+        # LSTM for sequence processing
+        self.lstm = nn.LSTM(
+            input_size=gcn_hidden_dim,
+            hidden_size=lstm_hidden_dim,
+            num_layers=num_lstm_layers,
+            batch_first=True,
+            bidirectional=False,
+            dropout=dropout if num_lstm_layers > 1 else 0
+        )
+        
+        # Classification head
+        self.classifier = nn.Sequential(
+            nn.Linear(lstm_hidden_dim, lstm_hidden_dim//2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(lstm_hidden_dim//2, num_classes)
+        )
+        
+        self.dropout = nn.Dropout(dropout)
+        
+    def forward(self, graphs):
+        """
+        Args:
+            batch: Dictionary containing:
+                - graphs: List of PyG Data objects (sequence of trees)
+                - label: Ground truth label
+        Returns:
+            logits: Classification logits
+        """
+        # Process each tree in the sequence with GNN
+        tree_features = []
+        for graph in graphs:
+            # Extract features from individual tree
+            x = self.tree_gnn(
+                x=graph.x,
+                edge_index=graph.edge_index,
+                batch=graph.batch
+            )
+            tree_features.append(x)
+        
+        # Stack features along sequence dimension [batch, seq_len, features]
+        sequence = torch.stack(tree_features, dim=1)
+        
+        # LSTM processing
+        lstm_out, _ = self.lstm(sequence)
+        
+        # Get final sequence output
+        seq_features = lstm_out[:, -1, :]  # Take last timestep output
+        
+        # Classification
+        logits = self.classifier(self.dropout(seq_features))
+        
+        return logits
