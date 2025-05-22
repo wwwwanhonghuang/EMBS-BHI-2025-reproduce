@@ -151,12 +151,18 @@ print(f'class counts: {class_counts}')
 # effective_num = [1.0 - np.exp(-beta * np.log(count + 1)) for count in class_counts]
 # class_weights = [(1.0 - beta) / en for en in effective_num]
 
-class_weights = 1 / np.sqrt(class_counts)  # Inverse square root weighting
-class_weights = class_weights / class_weights.sum()  # Normalize
+# class_weights = 1 / np.sqrt(class_counts)  # Inverse square root weighting
+# class_weights = class_weights / class_weights.sum()  # Normalize
+sqrt_weights = 1 / np.sqrt(class_counts)  # Your current approach
+invfreq_weights = 1 / np.array(class_counts)  # Original aggressive weights
 
-# class_weights = 1.0 / (np.array(class_counts) + 1e-5)  # Add epsilon to avoid division by zero
+# Blend them (50-50 mix)
+hybrid_weights = 0.5 * sqrt_weights + 0.5 * invfreq_weights
+hybrid_weights = hybrid_weights / hybrid_weights.sum()  # Normalize
 
-# class_weights = class_weights / np.sum(class_weights)  # Normalize (optional)
+class_weights = 1.0 / (np.array(class_counts) + 1e-5)  # Add epsilon to avoid division by zero
+
+class_weights = class_weights / np.sum(class_weights)  # Normalize (optional)
 # Calculate sample weights for the training set
 sample_weights = [class_weights[label] for label in train_labels]
 print(f"class weights = {class_weights}")
@@ -171,22 +177,27 @@ print(f"Test size: {len(test_subset)}")
 
 binary_classification=args.binary
 
+# Ensure at least 15% minority in every batch
+batch_size = 256
+min_minority = int(0.15 * batch_size)  # ~38 minority samples/batch
+
 def custom_collate(batch):
-    """
-    Custom collate function to batch torch_geometric.data.Data objects.
-    Args:
-        batch: List of dictionaries containing "graph" and "label".
-    Returns:
-        Batched graphs and labels.
-    """
+    inputs, labels = zip(*batch)
+    minority_idx = [i for i, label in enumerate(labels) if label == 1]
+    majority_idx = [i for i, label in enumerate(labels) if label == 0]
+    
+    # Ensure minimum minority samples
+    if len(minority_idx) < min_minority:
+        needed = min_minority - len(minority_idx)
+        extra = np.random.choice(majority_idx, needed, replace=False)
+        minority_idx.extend(extra)
+    
+    return torch.stack(inputs), torch.stack(labels)
+
+"""
+def custom_collate(batch):
     graphs = [item["graph"] for item in batch]
     
-    '''
-    if not binary_classification:
-        labels = [item["label"] for item in batch]
-    else:
-        labels = [1 if item["label"] == 1 else 0 for item in batch]
-    '''
     
     # Batch graphs using PyTorch Geometric's Batch class
     batched_graphs = Batch.from_data_list(graphs).to(device)
@@ -195,7 +206,7 @@ def custom_collate(batch):
     batched_labels = torch.stack(labels).to(device)
     
     return batched_graphs, batched_labels
-    
+"""    
 # Create DataLoader for the training set with WeightedRandomSampler
 train_loader = DataLoader(
     train_subset,
@@ -229,7 +240,6 @@ model = TreeGNN(hidden_dim = 256,  num_classes = num_classes).to(device)
 if args.binary:
     # criterion = torch.nn.BCEWithLogitsLoss()
     criterion = torch.nn.CrossEntropyLoss()
-
 
 else:
     class_weights = torch.tensor([1.0, 1.0, 1.0]).to(device)
@@ -343,4 +353,4 @@ for epoch in range(n_epochs):
     }
 
     np.save(os.path.join(save_folder, f'metrics_epoch_{epoch}.npy'), metrics_dict, allow_pickle=True)
-      
+     
