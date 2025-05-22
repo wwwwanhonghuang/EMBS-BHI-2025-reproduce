@@ -36,12 +36,12 @@ class GCNTreeDataset(Dataset):
     def __getitem__(self, idx):
         if(idx >= len(self.files)):
             raise ValueError(f'idx = {idx} >= total amount of files = {len(self.files)}')
-        file = self.files[idx]
+        file = self.files[int(idx)]
         with open(file, "r") as f:
             serialized_tree = f.read().strip()
         root = deserialize_tree(serialized_tree)
         graph = tree_to_graph(root, self.device)
-        label = torch.tensor(self.labels[idx], dtype=torch.long).to(self.device)
+        label = torch.tensor(self.labels[int(idx)], dtype=torch.long).to(self.device)
         return {"graph": graph, "label":label}
 
 
