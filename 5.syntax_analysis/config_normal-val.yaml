@@ -1,12 +1,11 @@
 syntax_analysis:
   grammar_file: "../data/grammar-trained.pcfg"
-  input: "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/normal_integrated_all_d2_s4_converted_validation.txt"
   input: "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/normal_integrated_all_d2_s4_converted_validation_repetition.txt"
   log_intervals: 1000000
-  log_path: "/data1/pcfg-log/logs/normal-validation/"
-  report_path: "/data1/pcfg-log/reports/normal-validation/"
+  log_path: "../data/pcfg-log/logs/normal-validation/"
+  report_path: "../data/pcfg-log/reports/normal-validation/"
   serialize_to_files: true
-  tree_serialization_path: "/data1/pcfg-log/serialized_tree/normal-validation/"
+  tree_serialization_path: "../data/pcfg-log/serialized_tree/normal-validation/"
   report_statistics: false
   sentence_from: -1
   sentence_to: -1

@@ -34,6 +34,7 @@ main:
   limit_n_sentences: -1
   validation_only: true
   grammar_weight_origin_in_log_form: true
+  print_grammar_when_loading: false
 EOF
 
 echo "Configuration written to $CONFIG_FILE"
