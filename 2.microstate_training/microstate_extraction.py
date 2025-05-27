@@ -141,12 +141,20 @@ parser.add_argument("-dic", "--database_index_configuration",
 parser.add_argument("--pre_epileptic_zone", default=60 * 2, type=int)
 parser.add_argument("--no_normal_only", action="store_true")
 parser.add_argument("--force_repreprocessing", action="store_true")
+parser.add_argument("--use_gfp", action="store_true")
 
 args = parser.parse_args()
 print(f'pre_epileptic_zone = {args.pre_epileptic_zone}')
 print(f'configuration file = {args.database_index_configuration}')
 print(f'no_normal_only = {args.no_normal_only}')
 print(f'force_repreprocessing = {args.force_repreprocessing}')
+if not args.use_gfp:
+    print(f'Warning: processing in non-GFP mode.')
+else:
+    print(f'processing in GFP mode')
+
+if not args.no_normal_only:
+    print(f'train microstates on normal area only.')
 
 with open(args.database_index_configuration) as f: 
     data = f.read() 
@@ -253,7 +261,7 @@ for person_index in record_indexes:
     # Train microstate sets with various numbers.
     for n_states in range(microstate_search_range[0], microstate_search_range[1] + 1):
         print(f"Begin training {n_states} microstates")
-        recording.run_latent_kmeans(n_states = n_states, use_gfp = True, n_inits = n_iters)
+        recording.run_latent_kmeans(n_states = n_states, use_gfp = args.use_gfp, n_inits = n_iters)
         
         if recording.latent_maps is None: # No result.
             continue
