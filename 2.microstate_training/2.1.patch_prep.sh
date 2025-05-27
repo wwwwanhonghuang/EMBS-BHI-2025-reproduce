@@ -3,8 +3,8 @@ prep_pipeline_path=$prep_path/prep_pipeline.py
 reference_path=$prep_path/reference.py
 find_noisy_channels_path=$prep_path/find_noisy_channels.py
 echo "Copying prep_pipeline.py to: $prep_pipeline_path"
-sudo cp ./prep_pipeline.py $prep_pipeline_path
+sudo cp ./patch_py_scripts/prep_pipeline.py $prep_pipeline_path
 echo "Copying reference.py to: $reference_path"
-sudo cp ./reference.py $reference_path
+sudo cp ./patch_py_scripts/reference.py $reference_path
 echo "Copying find_noisy_channels.py to: $find_noisy_channels_path"
-sudo cp ./find_noisy_channels.py $find_noisy_channels_path
+sudo cp ./patch_py_scripts/find_noisy_channels.py $find_noisy_channels_path
