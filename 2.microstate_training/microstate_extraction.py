@@ -148,6 +148,8 @@ print(f'pre_epileptic_zone = {args.pre_epileptic_zone}')
 print(f'configuration file = {args.database_index_configuration}')
 print(f'no_normal_only = {args.no_normal_only}')
 print(f'force_repreprocessing = {args.force_repreprocessing}')
+print(f'use_gfp={args.use_gfp}')
+
 if not args.use_gfp:
     print(f'Warning: processing in non-GFP mode.')
 else:
