@@ -31,6 +31,7 @@ os.makedirs(converted_sentences_path, exist_ok=True)
 
 L = os.listdir(dataset_base_path)
 
+binary_path = '../lib/pcfg-cky-inside-outside/bin/phase_convert'
 
 for l in L:
     path_current_l = os.path.join(dataset_base_path, l)
@@ -42,25 +43,28 @@ for l in L:
         if not file.endswith('.npz'):
             continue
 
-        full_path = os.path.join(path_current_l, file)
-        npz_data = np.load(full_path, allow_pickle=True)
-        microstate_sequence = npz_data['microstate_sequence']
+        full_seg_path = os.path.join(plain_text_folder, l, file.replace('.npz', "_seg_plain_text.txt"))
+        full_repetitions_path = os.path.join(plain_text_folder, l, file.replace('.npz', "_repetitions_plain_text.txt"))
+
+
+        full_out_seg_path = os.path.join(converted_sentences_path, l, file.replace('.npz', "_seg_plain_text.txt"))
+        full_out_repetitions_path = os.path.join(converted_sentences_path, l, file.replace('.npz', "_repetitions_plain_text.txt"))
 
         # Create subfolder if not exist
-        subfolder_path = os.path.join(recurrent_sentences_raw_path, l)
+        subfolder_path = os.path.join(converted_sentences_path, l)
         os.makedirs(subfolder_path, exist_ok=True)
+        
+                # Create tmp_config.yaml for the conversion
+        tmp_configuration = f'''\
+        phase_convert:
+        grammar_file: "../data/pcfg/grammar.pcfg"
+        input: "{full_seg_path}"
+        output: "{full_out_seg_path}"
+        '''
 
-        # Generate segments
-        segment_generator = FiniteTimeDelaySegmentGenerator(
-            data=to_segment_sequence(microstate_sequence, True),
-            time_delay=delay,
-            n_states=n_states,
-            cut=[2, 4096],
-            data_with_repetition=True
-        )
-        segments, repetition = segment_generator.calculate_recurrent_segments()
+        with open("tmp_config.yaml", "w") as f:
+            f.write(tmp_configuration)
 
-        np.save(os.path.join(subfolder_path, f'{file.replace(".npz", "")}_seg.npy'),
-                np.array(segments, dtype='object'), allow_pickle=True)
-        np.save(os.path.join(subfolder_path, f'{file.replace(".npz", "")}_repetitions.npy'),
-                np.array(repetition, dtype='object'), allow_pickle=True)
+        command = ['python', binary_path, 'tmp_config.yaml']
+        subprocess.run(command)
+        os.remove('tmp_config.yaml')
