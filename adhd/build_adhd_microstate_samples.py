@@ -123,6 +123,7 @@ for l in L:
             continue
             
         sample_files = [control_samples[i] for i in indexes]
+        assert len(sample_files) == l
         if produce_microstates_and_sequence(sample_id, l, sample_files):
             generated_samples.add(sample_id)
             pbar.update(1)
