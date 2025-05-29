@@ -113,7 +113,7 @@ parser.add_argument("-cf", "--configuration-file", type=str, default="./configs/
 parser.add_argument("-i", "--index-only", type=bool, default=False)
 parser.add_argument("-of", "--out_splitted_fragments", type=bool, default=False)
 parser.add_argument("-om", "--out_integrated_fragments", type=bool, default=True)
-parser.add_argument("-pz", "--pre_epileptic_zone", type = int, default=60 * 5) # area pz seconds before each seizure is identified as pre-epileptic area. 
+parser.add_argument("-pz", "--pre_epileptic_zone", type = int, default=60 * 2) # area pz seconds before each seizure is identified as pre-epileptic area. 
 
 args = parser.parse_args()
 
@@ -129,7 +129,7 @@ dataset = dataset_facade(dataset_name)
 
 corpus_storage_base_path = dict_args['corpus_storage_base_path']
 microstate_storage_base_path = dict_args['microstate_storage_base_path']
-
+print(f"use configuration file {args.configuration_file}")
 print(f"dataset path = {dataset_base_path}")
 print(f"dataset name = {dataset_name}")
 print(f'length_of_pre_epileptic_zone = {args.pre_epileptic_zone} s')
