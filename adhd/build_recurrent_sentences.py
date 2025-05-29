@@ -8,6 +8,7 @@ from functools import reduce
 # Append paths for imports
 sys.path.append("../")
 sys.path.append("../lib/microstate_lib/code")
+sys.path.append("../3.phase_space_reconstruction")
 
 from segmentation_module import (
     InfinitePhaseSpaceReonstructionBasedSegmentGenerator,
@@ -27,15 +28,16 @@ parser.add_argument("--dataset_base_path", default="./data/adhd_microstate_datas
 args = parser.parse_args()
 
 dataset_base_path = args.dataset_base_path
-plain_text_folder = os.path.join(dataset_base_path, "plain_text_segments")
+plain_text_folder = os.path.join(dataset_base_path, "..", "plain_text_segments")
 os.makedirs(plain_text_folder, exist_ok=True)
 
-recurrent_sentences_raw_path = os.path.join(dataset_base_path, "recurrent_sentences_raw")
+recurrent_sentences_raw_path = os.path.join(dataset_base_path, "..", "recurrent_sentences_raw")
 os.makedirs(recurrent_sentences_raw_path, exist_ok=True)
 
 L = os.listdir(dataset_base_path)
 
 # === Step 1: Generate segments and repetitions ===
+print("=== Step 1: Generate segments and repetitions ===")
 delay = 2
 n_states = 4
 
@@ -66,7 +68,8 @@ for l in L:
             data_with_repetition=True
         )
         segments, repetition = segment_generator.calculate_recurrent_segments()
-
+        assert len(segments) == len(repetition)
+        print(f'File {file} processed. Save in {subfolder_path}')
         np.save(os.path.join(subfolder_path, f'{file.replace(".npz", "")}_seg.npy'),
                 np.array(segments, dtype='object'), allow_pickle=True)
         np.save(os.path.join(subfolder_path, f'{file.replace(".npz", "")}_repetitions.npy'),

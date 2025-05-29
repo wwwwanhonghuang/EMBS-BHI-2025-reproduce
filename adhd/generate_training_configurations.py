@@ -12,7 +12,6 @@ sys.path.append("../lib/microstate_lib/code")
 from lib.dataset.dataset import *
 from lib.dataset.experiment_utils import to_segment_sequence
 
-
 def get_filename(path):
     return os.path.basename(path)
 
@@ -43,7 +42,7 @@ for l in L:
         if not file.endswith('.npz'):
             continue
 
-                # Define subfolder path correctly
+        # Define subfolder path correctly
         subfolder_path = os.path.join(training_configurations_path, l)
         os.makedirs(subfolder_path, exist_ok=True)
 
