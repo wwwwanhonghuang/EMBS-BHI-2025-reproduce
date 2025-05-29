@@ -24,7 +24,7 @@ def get_arguments(record_configuration):
     post_merge_pipeline =  record_configuration['preprocessings']['post_merge_pipeline']
     microstate_search_range = (record_configuration['extraction_process'].get('number-microstate-least', 4), 
         record_configuration['extraction_process'].get('number-microstate-most', 4))
-    n_iters = record_configuration['extraction_process'].get('kmeans_iterations', 200)
+    n_iters = record_configuration['extraction_process'].get('kmeans-iterations', 200)
     stop_delta_threshold = record_configuration['extraction_process'].get('stop_threshold', 0.025)
     store_4_microstates = record_configuration['extraction_process'].get('store_microstates_n4', True)
     save_preprocessed_data = record_configuration['extraction_process'].get('store_preprocessed', True)
