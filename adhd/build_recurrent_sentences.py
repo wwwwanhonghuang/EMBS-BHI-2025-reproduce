@@ -76,6 +76,7 @@ for l in L:
                 np.array(repetition, dtype='object'), allow_pickle=True)
 
 # === Step 2: Convert to plain text ===
+print("=== Step 2: Convert to plain text ===")
 for l in L:
     path_current_l = os.path.join(dataset_base_path, l)
     if not os.path.isdir(path_current_l):
@@ -89,7 +90,7 @@ for l in L:
         seg_file = os.path.join(recurrent_sentences_raw_path, l, file.replace(".npz", "") + "_seg.npy")
         repetitions_file = os.path.join(recurrent_sentences_raw_path, l, file.replace(".npz", "") + "_repetitions.npy")
 
-        seg_data = np.load(seg_file, allow_pickle=True)
+        seg_data = np.load(seg_file, allow_pickle=True) + 1
         repetitions_data = np.load(repetitions_file, allow_pickle=True)
 
         subfolder_path = os.path.join(plain_text_folder, l)
