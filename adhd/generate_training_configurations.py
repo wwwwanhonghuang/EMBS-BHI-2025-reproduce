@@ -30,7 +30,7 @@ training_configurations_path = os.path.join(dataset_base_path, "..", "training_c
 os.makedirs(training_configurations_path, exist_ok=True)
 
 L = os.listdir(dataset_base_path)
-grammar_path = '../data/pcfg/grammar.pcfg'
+grammar_path = './grammar.pcfg'
 trained_grammars_save_path = os.path.join(dataset_base_path, "..", "trained_grammars")
 os.makedirs(trained_grammars_save_path, exist_ok=True)
 
@@ -54,7 +54,7 @@ for l in L:
         full_out_configuration_path = os.path.join(subfolder_path, file.replace('.npz', ".yaml"))
 
         # Path to the input text file
-        full_converted_plain_text_seg_file = os.path.join(converted_sentences_path, l, file.replace('.npz', "_seg_plain_text.txt"))
+        full_converted_plain_text_seg_file = os.path.join(converted_sentences_path, l, file.replace('.npz', "_seg_text.txt"))
         os.makedirs(os.path.join(trained_grammars_save_path, l), exist_ok=True)
         training_log_path = os.path.join(trained_grammars_save_path, l, file.split("_")[0])
         os.makedirs(training_log_path, exist_ok=True)
@@ -71,12 +71,12 @@ main:
     log_warning_in_training: false
     batch_size_for_parameter_update: -1
     split_data:
-        enabled: false
+        enabled: true
         val_dataset_path: "{training_log_path}/validate_sentences.txt"
         train_dataset_path: "{training_log_path}/train_sentences.txt"
         train_fraction: 0.8
     validation_file: "{training_log_path}/validate_sentences.txt"
-    n_epochs: 10
+    n_epochs: 8
     limit_n_sentences: -1
     validation_only: false
 '''
