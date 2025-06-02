@@ -11,3 +11,9 @@ train_pcfg:
 	    echo "Iterate length $$LENGTH samples. Sample amount limitatin = $$LIMIT" ; \
 	    ls ./data/training_configurations/$$LENGTH/*.yaml | head -n $$LIMIT | xargs -I{} $$BINARY {}; \
 	done ;\
+
+generate_adhd_dataset:
+	python build_adhd_samples.py
+
+process_adhd_dataset:
+	python generate_adhd_sentences.py
