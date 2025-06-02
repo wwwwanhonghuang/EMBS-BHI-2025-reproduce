@@ -37,48 +37,48 @@ os.makedirs(recurrent_sentences_raw_path, exist_ok=True)
 
 L = os.listdir(dataset_base_path)
 
-# # === Step 1: Generate segments and repetitions ===
-# print("=== Step 1: Generate segments and repetitions ===")
-# delay = 2
-# n_states = 4
+# === Step 1: Generate segments and repetitions ===
+print("=== Step 1: Generate segments and repetitions ===")
+delay = 2
+n_states = 4
 
-# path_current = dataset_base_path
+path_current = dataset_base_path
 
-# if not os.path.isdir(path_current):
-#     raise Exception()
+if not os.path.isdir(path_current):
+    raise Exception()
 
-# files = os.listdir(path_current)
-# print(path_current, files)
-# for file in files:
-#     if not file.endswith('.npz'):
-#         continue
+files = os.listdir(path_current)
+print(path_current, files)
+for file in files:
+    if not file.endswith('.npz'):
+        continue
 
-#     full_path = os.path.join(path_current, file)
-#     npz_data = np.load(full_path, allow_pickle=True)
-#     microstate_sequence = npz_data['microstate_sequence']
+    full_path = os.path.join(path_current, file)
+    npz_data = np.load(full_path, allow_pickle=True)
+    microstate_sequence = npz_data['microstate_sequence']
 
-#     # Create subfolder if not exist
-#     subfolder_path = recurrent_sentences_raw_path
-#     os.makedirs(subfolder_path, exist_ok=True)
+    # Create subfolder if not exist
+    subfolder_path = recurrent_sentences_raw_path
+    os.makedirs(subfolder_path, exist_ok=True)
 
-#     # Generate segments
-#     segment_generator = FiniteTimeDelaySegmentGenerator(
-#         data=to_segment_sequence(microstate_sequence, True),
-#         time_delay=delay,
-#         n_states=n_states,
-#         cut=[2, 4096],
-#         data_with_repetition=True
-#     )
-#     segments, repetition = segment_generator.calculate_recurrent_segments()
-#     assert len(segments) == len(repetition)
-#     print(f'File {file} processed. Save in {subfolder_path}')
-#     np.save(os.path.join(subfolder_path, f'{file.replace(".npz", "")}_seg.npy'),
-#             np.array(segments, dtype='object'), allow_pickle=True)
-#     np.save(os.path.join(subfolder_path, f'{file.replace(".npz", "")}_repetitions.npy'),
-#             np.array(repetition, dtype='object'), allow_pickle=True)
+    # Generate segments
+    segment_generator = FiniteTimeDelaySegmentGenerator(
+        data=to_segment_sequence(microstate_sequence, True),
+        time_delay=delay,
+        n_states=n_states,
+        cut=[2, 4096],
+        data_with_repetition=True
+    )
+    segments, repetition = segment_generator.calculate_recurrent_segments()
+    assert len(segments) == len(repetition)
+    print(f'File {file} processed. Save in {subfolder_path}')
+    np.save(os.path.join(subfolder_path, f'{file.replace(".npz", "")}_seg.npy'),
+            np.array(segments, dtype='object'), allow_pickle=True)
+    np.save(os.path.join(subfolder_path, f'{file.replace(".npz", "")}_repetitions.npy'),
+            np.array(repetition, dtype='object'), allow_pickle=True)
 
-# # === Step 2: Convert to plain text ===
-# print("=== Step 2: Convert to plain text ===")
+# === Step 2: Convert to plain text ===
+print("=== Step 2: Convert to plain text ===")
 path_current = dataset_base_path
 if not os.path.isdir(path_current):
     raise Exception()
