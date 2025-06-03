@@ -1,4 +1,0 @@
-phase_convert:
-  grammar_file: "../data/pcfg/grammar.pcfg"
-  input: "../data/recurrence_sentences/epileptic_eeg_dataset/seizure_integrated_all_d2_s4.txt"
-  output: "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/seizure_integrated_all_d2_s4_converted.txt"
