@@ -1,5 +1,6 @@
-TRAIN_DATA_BASE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted
-python split_train_data.py $TRAIN_DATA_BASE_PATH/normal_integrated_all_d2_s4_converted.txt --repetition_file $TRAIN_DATA_BASE_PATH/normal_integrated_all_d2_s4_repetitions.txt
+TRAIN_DATA_BASE_PATH=../data/recurrence_sentences/epileptic_eeg_dataset/exp1-distinguishability/sentence_converted
+
+python split_train_data.py $TRAIN_DATA_BASE_PATH/normal_integrated_all_d2_s4_converted.txt --repetition_file $TRAIN_DATA_BASE_PATH/normal_integrated_all_d2_s4_repetition_converted.txt
 
 python split_train_data.py $TRAIN_DATA_BASE_PATH/normal_integrated_all_d2_s4_converted_train.txt --repetition_file $TRAIN_DATA_BASE_PATH/normal_integrated_all_d2_s4_converted_train_repetition.txt
 
