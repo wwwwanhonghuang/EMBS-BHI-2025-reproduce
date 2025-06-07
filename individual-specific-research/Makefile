@@ -1,65 +1,36 @@
-# Makefile for individual project setup
 
-# Common Configuration
+PREEPILEPTIC_LENGTH_SEC?=120
+FORCE_REPREPROCESSING?=0
+define MICROSTATE_MAKEFILE_TRAINING_ITEM_TEMPLATE
+train-microstate-$(EXPERIMENT_TYPE)-$(GFP_PEEK_DESC)-$(NORMAL_ONLY_DESC):
+	CONFIGURATION_FILE=$$(CWD)/microstates/configurations/microstate_$(EXPERIMENT_TYPE)_$(NORMAL_ONLY_DESC)_$(GFP_PEEK_DESC).json; \\
+	FLAGS="--pre_epileptic_zone $(PREEPILEPTIC_LENGTH_SEC) --database_index_configuration $$$$CONFIGURATION_FILE"; \\
+	echo "Running microstate training ($(EXPERIMENT_TYPE), $(GFP_PEEK_DESC), $(NORMAL_ONLY_DESC)) with:" ;\\
+	echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)" ; \\
+	echo "  PREEPILEPTIC_LENGTH_SEC=$(PREEPILEPTIC_LENGTH_SEC)" ; \\
+	echo "  CONFIGURATION_FILE=$$$$CONFIGURATION_FILE" ; \\
+	if [ "$(FORCE_REPREPROCESSING)" -eq 1 ]; then \\
+		FLAGS="$$$$FLAGS --force_repreprocessing"; \\
+	fi; \\
+	cd ../../2.microstate_training ; \
+	python microstate_extraction.py $$$$FLAGS
 
-# JSON template
-define MICROSTATE_JSON_TEMPLATE
-{
-    "indexes":{
-        "all": $(INDEXES)
-    },
-    "sampling_freq": 500,
-    "save_prefix":"$(SAVE_PREFIX)",
-    "preprocessings":{
-        "pipeline":[
-            ["drop_channels", {"ch_names": ["ECG EKG", "Manual"], "on_missing": "warn"}], 
-            ["prep", {
-            "montage": "standard_1020",
-            "prep_params":{
-                "ref_chs": "eeg",
-                "reref_chs": "eeg",
-                "line_freqs":[]
-            },
-            "reference_args": {
-                "correlation_secs": 1.0, 
-                "correlation_threshold": 0.4, 
-                "frac_bad": 0.01
-            }
-            }],
-        ["asr", {"cutoff": 30}], ["average_reference", {}], ["min_max_nor", {}]],
-        "post_merge_pipeline": [["average_reference", {}], ["min_max_nor", {}]]
-    },
-    "extraction_process":{
-        "load_preprocessed": true,
-        "dataset_base_path": "$(DATASET_BASE_PATH)",
-        "database_name": "epileptic_eeg_dataset",
-        "number-microstate-least": 4,
-        "number-microstate-most": 4,
-        "kmeans-iterations": 50,
-        "stop-threshold": 0.025,
-        "store-microstates-n4": true,
-        "store-preprocessed": true,
-        "store-segmentation": true,
-        "store-path": "$(STORE_PATH)",
-        "preprocessed_file_prefix": "$(PREPROCESSED_FILE_PREFIX)"
-    }
-}
 endef
 
-export MICROSTATE_JSON_TEMPLATE
+export MICROSTATE_MAKEFILE_TRAINING_ITEM_TEMPLATE
 
 .PHONY: generate_microstate_dev generate_microstate_eval
 
 NORMAL_ONLY_DESC=
+GFP_PEEK_DESC=
 
-
-MICROSTATE_DEV_SAVE_PREFIX = [dev$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))]
+MICROSTATE_DEV_SAVE_PREFIX = [dev$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))$(if $(GFP_PEEK_DESC),_$(GFP_PEEK_DESC))]
 MICROSTATE_DEV_DATASET_BASE_PATH = ../data/dataset
-MICROSTATE_DEV_PREPROCESSED_FILE_PREFIX = [preprocessed]
+MICROSTATE_DEV_PREPROCESSED_FILE_PREFIX = [dev_preprocessed$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))$(if $(GFP_PEEK_DESC),_$(GFP_PEEK_DESC))]
 
-MICROSTATE_EVAL_SAVE_PREFIX = [eval$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))]
+MICROSTATE_EVAL_SAVE_PREFIX = [eval$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))$(if $(GFP_PEEK_DESC),_$(GFP_PEEK_DESC))]
 MICROSTATE_EVAL_DATASET_BASE_PATH = ../data/dataset
-MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX = [eval_preprocessed]
+MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX = [eval_preprocessed$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))$(if $(GFP_PEEK_DESC),_$(GFP_PEEK_DESC))]
 
 make_individual_project_11:
 	@DEV_INDEXES="[[11, 1], [11, 2], [11, 3]]" ; \
@@ -106,27 +77,38 @@ _make_individual_project:
 	mkdir -p p$(PERSON_ID)/microstates/configurations ; \
 	touch p$(PERSON_ID)/Makefile ; \
 	echo "Project setup complete for person $(PERSON_ID)" ; \
-	$(MAKE) generate_microstate_dev \
-		INDEXES="$(DEV_INDEXES)" \
-		PERSON_ID=$(PERSON_ID) \
-		MICROSTATE_DEV_STORE_PATH="./p$(PERSON_ID)/microstates/" \
-		NORMAL_ONLY_DESC=;
-	$(MAKE) generate_microstate_eval \
-		INDEXES="$(EVAL_INDEXES)" \
-		PERSON_ID=$(PERSON_ID) \
-		MICROSTATE_EVAL_STORE_PATH="./p$(PERSON_ID)/microstates/" \
-		NORMAL_ONLY_DESC=;
-	$(MAKE) generate_microstate_dev \
-		INDEXES="$(DEV_INDEXES)" \
-		PERSON_ID=$(PERSON_ID) \
-		MICROSTATE_DEV_STORE_PATH="./p$(PERSON_ID)/microstates/" \
-		NORMAL_ONLY_DESC=normal_only;
-	$(MAKE) generate_microstate_eval \
-		INDEXES="$(EVAL_INDEXES)" \
-		PERSON_ID=$(PERSON_ID) \
-		MICROSTATE_EVAL_STORE_PATH="./p$(PERSON_ID)/microstates/" \
-		NORMAL_ONLY_DESC=normal_only;
-		
+	for _GFP_PEEK_DESC in nogfp gfp; do \
+		for _NORMAL_ONLY_DESC in normal_only all; do \
+			$(MAKE) generate_microstate_dev \
+				INDEXES="$(DEV_INDEXES)" \
+				PERSON_ID=$(PERSON_ID) \
+				MICROSTATE_DEV_STORE_PATH="./p$(PERSON_ID)/microstates/" \
+				NORMAL_ONLY_DESC=$$_NORMAL_ONLY_DESC \
+				GFP_PEEK_DESC=$$_GFP_PEEK_DESC; \
+		done; \
+	done;
+	for _GFP_PEEK_DESC in nogfp gfp; do \
+		for _NORMAL_ONLY_DESC in normal_only all; do \
+			$(MAKE) generate_microstate_eval \
+				INDEXES="$(DEV_INDEXES)" \
+				PERSON_ID=$(PERSON_ID) \
+				MICROSTATE_EVAL_STORE_PATH="./p$(PERSON_ID)/microstates/" \
+				NORMAL_ONLY_DESC=$$_NORMAL_ONLY_DESC \
+				GFP_PEEK_DESC=$$_GFP_PEEK_DESC; \
+		done; \
+	done;
+	echo 'CWD := $$(shell pwd)' > p$(PERSON_ID)/Makefile
+	for _GFP_PEEK_DESC in nogfp gfp; do \
+		for _NORMAL_ONLY_DESC in normal_only all; do \
+			for _EXPERIMENT_TYPE in dev eval; do \
+				$(MAKE) _generate_microstate_training_makefile_items \
+					NORMAL_ONLY_DESC=$$_NORMAL_ONLY_DESC \
+					GFP_PEEK_DESC=$$_GFP_PEEK_DESC \
+					EXPERIMENT_TYPE=$$_EXPERIMENT_TYPE; \
+			done; \
+		done; \
+	done;
+
 generate_microstate_dev:
 	@$(MAKE) _generate_microstate_training_configuration_json \
 		TYPE=dev \
@@ -135,7 +117,7 @@ generate_microstate_dev:
 		DATASET_BASE_PATH="$(MICROSTATE_DEV_DATASET_BASE_PATH)" \
 		STORE_PATH="$(MICROSTATE_DEV_STORE_PATH)" \
 		PREPROCESSED_FILE_PREFIX="$(MICROSTATE_DEV_PREPROCESSED_FILE_PREFIX)" \
-		OUTPUT_FILE="p$(PERSON_ID)/microstates/configurations/microstate_dev$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC)).json"
+		OUTPUT_FILE="p$(PERSON_ID)/microstates/configurations/microstate_dev$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))$(if $(GFP_PEEK_DESC),_$(GFP_PEEK_DESC)).json"
 
 generate_microstate_eval:
 	@$(MAKE) _generate_microstate_training_configuration_json \
@@ -145,8 +127,12 @@ generate_microstate_eval:
 		DATASET_BASE_PATH="$(MICROSTATE_EVAL_DATASET_BASE_PATH)" \
 		STORE_PATH="$(MICROSTATE_EVAL_STORE_PATH)" \
 		PREPROCESSED_FILE_PREFIX="$(MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX)" \
-		OUTPUT_FILE="p$(PERSON_ID)/microstates/configurations/microstate_eval$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC)).json"
+		OUTPUT_FILE="p$(PERSON_ID)/microstates/configurations/microstate_eval$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))$(if $(GFP_PEEK_DESC),_$(GFP_PEEK_DESC)).json"
 
 _generate_microstate_training_configuration_json:
-	@echo "$$MICROSTATE_JSON_TEMPLATE" > $(OUTPUT_FILE)
+	envsubst < microstate_training_configuration_template.json.in > $(OUTPUT_FILE)
 	@echo "Generated $(TYPE) configuration at $(OUTPUT_FILE)"
+
+_generate_microstate_training_makefile_items:
+	@echo "$$MICROSTATE_MAKEFILE_TRAINING_ITEM_TEMPLATE" >> p$(PERSON_ID)/Makefile
+	
