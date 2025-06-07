@@ -113,6 +113,15 @@ _make_individual_project:
 			done; \
 		done; \
 	done;
+	echo 'microstate-train-all:' >> p$(PERSON_ID)/Makefile
+	for _GFP_PEEK_DESC in nogfp gfp; do \
+		for _NORMAL_ONLY_DESC in normal_only all; do \
+			for _EXPERIMENT_TYPE in dev eval; do \
+				echo "	\$$(MAKE) train-microstate-$${_EXPERIMENT_TYPE}-$${_GFP_PEEK_DESC}-$${_NORMAL_ONLY_DESC}" >> p$(PERSON_ID)/Makefile; \
+			done; \
+		done; \
+	done;
+
 
 generate_microstate_dev:
 	@$(MAKE) _generate_microstate_training_configuration_json \
