@@ -1,9 +1,10 @@
 import argparse
-import os
+import os, sys
 import re
 import numpy as np
 import subprocess  # Added for running external commands
-
+sys.path.append("../third_parts/microstate_lib/code")
+from data_utils import match_reorder_topomaps 
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--l", type=int)
@@ -18,7 +19,7 @@ dataset_base_path = args.dataset_base_path
 trained_grammar_base_path = os.path.join(dataset_base_path, "..", "trained_grammars")
 
 trained_outcome_base_path = os.path.join(trained_grammar_base_path, str(l), md5)
-
+adhd_dataset_base_path = os.path.join(trained_grammar_base_path, "..", "syntax_analysis_data", "adhd")
 # Directory to search
 # Regex pattern (e.g., files starting with 'data_' and ending in '.txt')
 pattern = re.compile(r"^epoch_.*\.likelihood$")
@@ -59,33 +60,25 @@ origin_dataset_files = [f for f in os.listdir(os.path.join(dataset_base_path, st
 assert len(origin_dataset_files) == 1, f"Expect exactly 1 origin_dataset_file, found {origin_dataset_files}" 
 origin_dataset_file_path = os.path.join(dataset_base_path, str(l), origin_dataset_files[0])
 data = np.load(origin_dataset_file_path)
+
 full_ids = set(range(0, 61))
 sample_ids = set([int(sid) for sid in str(data['sample_id']).split("_")])
-print(f"sample_ids = {sample_ids}, len = {len(sample_ids)}")
-eval_sample_ids = full_ids - sample_ids
-print(f"samples used for evaluation = {eval_sample_ids}, len = {len(eval_sample_ids)}")
+microstates = data['microstates']
 
-syntax_analysis_data_path = os.path.join(dataset_base_path, "..", "syntax_analysis_data", md5)
+print(f"sample_ids = {sample_ids}, len = {len(sample_ids)}")
+
+syntax_analysis_data_path = os.path.join(dataset_base_path, "..", "syntax_analysis_data", str(l), md5)
 print(f'syntax_analysis_data_path = {syntax_analysis_data_path}')
 os.makedirs(syntax_analysis_data_path, exist_ok=True)
 
-for eval_sample_id in eval_sample_ids:
-    os.makedirs(os.path.join(syntax_analysis_data_path, str(eval_sample_id)), exist_ok=True)
-
-sentence_converted_path = os.path.join(dataset_base_path, "..", "sentence_converted", str(l))
-
-segmentation_files = [f for f in os.listdir(sentence_converted_path) if re.compile(f"^{md5}_gev_[01]\.[0-9]+_seg_text\.txt$").match(f)]
-assert len(segmentation_files) == 1, f"Expect exactly 1 segmentation_file, found {segmentation_files}" 
-segmentation_file = os.path.join(sentence_converted_path, segmentation_files[0])  # Added full path
-
-repetition_files = [f for f in os.listdir(sentence_converted_path) if re.compile(f"^{md5}_gev_[01]\.[0-9]+_repetitions\.txt$").match(f)]
-assert len(repetition_files) == 1, f"Expect exactly 1 repetition_files, found {repetition_files}" 
-repetition_file = os.path.join(sentence_converted_path, repetition_files[0])  # Added full path
-
-for eval_sample_id in eval_sample_ids:
-    print(f"Processing sample id = {eval_sample_id}.")
-    tree_serialization_path = os.path.join(syntax_analysis_data_path, "controls", str(eval_sample_id))  # Fixed os.join to os.path.join
+for class_name in ['controls', 'adhd']:
+    tree_serialization_path = os.path.join(syntax_analysis_data_path, class_name, "trees")  # Fixed os.join to os.path.join
     os.makedirs(tree_serialization_path, exist_ok=True)
+
+    segmentation_file = os.path.join(syntax_analysis_data_path, class_name, "merged_segs.txt")
+    repetition_file = os.path.join(syntax_analysis_data_path, class_name, "merged_repetitions.txt")
+
+
     syntax_analysis_configuration_yaml = f"""
 syntax_analysis:
     grammar_file: "{out_best_grammar_file}"  # Changed to use the generated grammar file
@@ -99,36 +92,10 @@ syntax_analysis:
     report_statistics: false
     sentence_from: -1
     sentence_to: -1
-"""
-    configuration_path = os.path.join(tree_serialization_path, 'configuration.tmp.yaml')
-    with open(configuration_path, 'w') as configuration_file_io:
-        configuration_file_io.write(syntax_analysis_configuration_yaml)
-    
-    # Run the syntax analysis command
-    subprocess.run([syntax_analysis_binary, configuration_path], check=True)
-    
+    """
 
-for eval_sample_id in range(0, 60):
-    print(f"Processing sample id = {eval_sample_id}.")
-    tree_serialization_path = os.path.join(syntax_analysis_data_path, "controls", str(eval_sample_id))  # Fixed os.join to os.path.join
-    os.makedirs(tree_serialization_path, exist_ok=True)
-    syntax_analysis_configuration_yaml = f"""
-syntax_analysis:
-    grammar_file: "{out_best_grammar_file}"  # Changed to use the generated grammar file
-    input: "{segmentation_file}"
-    repetition: "{repetition_file}"
-    log_intervals: 1000000
-    log_path: "./data/logs"
-    report_path: "./data/reports"
-    serialize_to_files: true
-    tree_serialization_path: "{tree_serialization_path}"
-    report_statistics: false
-    sentence_from: -1
-    sentence_to: -1
-"""
-    configuration_path = os.path.join(tree_serialization_path, 'configuration.tmp.yaml')
+    configuration_path = os.path.join(syntax_analysis_data_path,  f'syntax_analysis_configuration_{class_name}.yaml')
     with open(configuration_path, 'w') as configuration_file_io:
         configuration_file_io.write(syntax_analysis_configuration_yaml)
-    
-    # Run the syntax analysis command
-    subprocess.run([syntax_analysis_binary, configuration_path], check=True)
+
+
