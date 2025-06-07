@@ -62,8 +62,8 @@ make_individual_project_13:
 		EVAL_INDEXES="$$EVAL_INDEXES"
 
 make_individual_project_14:
-	@DEV_INDEXES="[[14, 1]]" ; \
-	EVAL_INDEXES="[[14, 2]]" ; \
+	@DEV_INDEXES="[[14, 1], [14, 2]]" ; \
+	EVAL_INDEXES="[[14, 3]]" ; \
 	$(MAKE) _make_individual_project \
 		PERSON_ID=14 \
 		DEV_INDEXES="$$DEV_INDEXES" \
