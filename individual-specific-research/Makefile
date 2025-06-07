@@ -32,6 +32,11 @@ MICROSTATE_EVAL_SAVE_PREFIX = [eval$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC)
 MICROSTATE_EVAL_DATASET_BASE_PATH = ../data/dataset
 MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX = [eval_preprocessed$(if $(NORMAL_ONLY_DESC),_$(NORMAL_ONLY_DESC))$(if $(GFP_PEEK_DESC),_$(GFP_PEEK_DESC))]
 
+all: make_individual_project_11 make_individual_project_12 make_individual_project_13 make_individual_project_14 make_individual_project_15
+
+clean-all-projects:
+	rm -rf p*
+
 make_individual_project_11:
 	@DEV_INDEXES="[[11, 1], [11, 2], [11, 3]]" ; \
 	EVAL_INDEXES="[[11, 4]]" ; \
@@ -90,7 +95,7 @@ _make_individual_project:
 	for _GFP_PEEK_DESC in nogfp gfp; do \
 		for _NORMAL_ONLY_DESC in normal_only all; do \
 			$(MAKE) generate_microstate_eval \
-				INDEXES="$(DEV_INDEXES)" \
+				INDEXES="$(EVAL_INDEXES)" \
 				PERSON_ID=$(PERSON_ID) \
 				MICROSTATE_EVAL_STORE_PATH="./p$(PERSON_ID)/microstates/" \
 				NORMAL_ONLY_DESC=$$_NORMAL_ONLY_DESC \
