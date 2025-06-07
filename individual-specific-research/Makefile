@@ -9,12 +9,14 @@ train-microstate-$(EXPERIMENT_TYPE)-$(GFP_PEEK_DESC)-$(NORMAL_ONLY_DESC):
 	echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)" ; \\
 	echo "  PREEPILEPTIC_LENGTH_SEC=$(PREEPILEPTIC_LENGTH_SEC)" ; \\
 	echo "  CONFIGURATION_FILE=$$$$CONFIGURATION_FILE" ; \\
-	if [ "$(FORCE_REPREPROCESSING)" -eq 1 ]; then \\
+	if [ "$$(FORCE_REPREPROCESSING)" -eq 1 ]; then \\
 		FLAGS="$$$$FLAGS --force_repreprocessing"; \\
 	fi; \\
 	cd ../../2.microstate_training ; \
-	python microstate_extraction.py $$$$FLAGS
-
+python microstate_extraction.py $$$$FLAGS \
+  $(if $(filter all,$(NORMAL_ONLY_DESC)),--no_normal_only) \
+  $(if $(filter gfp,$(GFP_PEEK_DESC)),--use_gfp)
+  
 endef
 
 export MICROSTATE_MAKEFILE_TRAINING_ITEM_TEMPLATE
@@ -103,6 +105,7 @@ _make_individual_project:
 		done; \
 	done;
 	echo 'CWD := $$(shell pwd)' > p$(PERSON_ID)/Makefile
+	echo 'FORCE_REPREPROCESSING = $(FORCE_REPREPROCESSING)' >> p$(PERSON_ID)/Makefile
 	for _GFP_PEEK_DESC in nogfp gfp; do \
 		for _NORMAL_ONLY_DESC in normal_only all; do \
 			for _EXPERIMENT_TYPE in dev eval; do \
