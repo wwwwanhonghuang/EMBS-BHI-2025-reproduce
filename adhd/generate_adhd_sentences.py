@@ -17,7 +17,7 @@ from segmentation_module import (
 )
 from lib.dataset.dataset import *
 from lib.dataset.experiment_utils import to_segment_sequence
-
+from data_utils import match_reorder_topomaps
 
 def get_filename(path):
     return os.path.basename(path)
@@ -83,7 +83,6 @@ path_current = dataset_base_path
 if not os.path.isdir(path_current):
     raise Exception()
 
-
 files = os.listdir(path_current)
 for file in files:
     if not file.endswith('.npz'):
@@ -109,4 +108,3 @@ for file in files:
             rep_line = ' '.join(map(str, repetitions_data[i]))
             seg_file_io.write(seg_line + '\n')
             repetitions_file_io.write(rep_line + '\n')
-

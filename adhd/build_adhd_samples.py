@@ -68,7 +68,6 @@ parser.add_argument("--preprocessed_dataset_base_path",
                    default="./data/adhd_control_preprocessed", 
                    type=str)
 
-
 parser.add_argument("--n_states", 
                    default=4, 
                    type=int,
