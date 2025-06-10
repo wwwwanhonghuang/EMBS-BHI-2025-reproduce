@@ -32,12 +32,13 @@ signal-to-sequence-$(EXPERIMENT_TYPE)-$(GFP_PEEK_DESC)-$(NORMAL_ONLY_DESC):
 endef
 
 define SEQUENCE_SPILTTING_MAKEFILE_ITEM_TEMPLATE
-sequence_spiltting-$(EXPERIMENT_TYPE)-$(GFP_PEEK_DESC)-$(NORMAL_ONLY_DESC):
-	CONFIGURATION_FILE=$$(CWD)/microstates/configurations/microstate_$(EXPERIMENT_TYPE)_$(NORMAL_ONLY_DESC)_$(GFP_PEEK_DESC).json; \\
-	RECORD_FILE=$$(CWD)/microstates/[$(EXPERIMENT_TYPE)_preprocessed]all.edf; \\
-	FLAGS="-cf $$$$CONFIGURATION_FILE -pz $(PREEPILEPTIC_LENGTH_SEC)"; \\
-	cd ../../3.phase_space_reconstruction \\
+sequence_spiltting-dev-nogfp-normal_only: \\
+	CONFIGURATION_FILE=$$(CWD)/microstates/configurations/microstate_dev_normal_only_nogfp.json; \\
+	RECORD_FILE=$$(CWD)/microstates/$(PREPROCESSED_FILE_PREFIX)all.edf; \\
+	FLAGS=\"-cf $$$$CONFIGURATION_FILE -pz 120\"; \\
+	cd ../../3.phase_space_reconstruction; \\
 	python dataset_splitting_and_segmentation.py $$$$FLAGS
+
 endef
 
 export MICROSTATE_MAKEFILE_TRAINING_MAKEFILE_ITEM_TEMPLATE
@@ -211,6 +212,17 @@ _make_individual_project:
 		PREPROCESSED_FILE_PREFIX="$(MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX)" \
 		OUTPUT_FILE="p$(PERSON_ID)/sequences/configurations/microstate_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC).json"; \
 	)))
+	for _GFP_PEEK_DESC in nogfp gfp; do \
+		for _NORMAL_ONLY_DESC in normal_only all; do \
+			for _EXPERIMENT_TYPE in dev eval; do \
+				NORMAL_ONLY_DESC=$$_NORMAL_ONLY_DESC; \
+				GFP_PEEK_DESC=$$_GFP_PEEK_DESC; \
+				EXPERIMENT_TYPE=$$_EXPERIMENT_TYPE; \
+				echo "$$SEQUENCE_SPILTTING_MAKEFILE_ITEM_TEMPLATE" >> p$(PERSON_ID)/Makefile; \
+			done; \
+		done; \
+	done;
+
 
 generate_microstate_dev:
 	@$(MAKE) _generate_microstate_training_configuration_json \
