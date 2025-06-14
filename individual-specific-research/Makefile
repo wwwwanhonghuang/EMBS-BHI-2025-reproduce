@@ -7,7 +7,7 @@ PCFG_ESTIMATOR_BINARY_PATH?=../lib/pcfg-cky-inside-outside/bin/train_pcfg
 
 define MICROSTATE_MAKEFILE_TRAINING_MAKEFILE_ITEM_TEMPLATE
 train-microstate-$(EXPERIMENT_TYPE)-$(GFP_PEEK_DESC)-$(NORMAL_ONLY_DESC):
-	CONFIGURATION_FILE=$$(CWD)/microstates/configurations/microstate_$(EXPERIMENT_TYPE)_$(NORMAL_ONLY_DESC)_$(GFP_PEEK_DESC).json; \\
+	CONFIGURATION_FILE=$$(CWD)/microstates/configurations/microstate_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC).json; \\
 	FLAGS="--pre_epileptic_zone $(PREEPILEPTIC_LENGTH_SEC) --database_index_configuration $$$$CONFIGURATION_FILE"; \\
 	echo "Running microstate training ($(EXPERIMENT_TYPE), $(GFP_PEEK_DESC), $(NORMAL_ONLY_DESC)) with:" ;\\
 	echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)" ; \\
@@ -138,7 +138,7 @@ _make_individual_project:
 			$(MAKE) generate_microstate_dev \
 				INDEXES="$(DEV_INDEXES)" \
 				PERSON_ID=$(PERSON_ID) \
-				MICROSTATE_DEV_STORE_PATH="./p$(PERSON_ID)/microstates/" \
+				MICROSTATE_DEV_STORE_PATH="$(PWD)/p$(PERSON_ID)/microstates/" \
 				NORMAL_ONLY_DESC=$$_NORMAL_ONLY_DESC \
 				GFP_PEEK_DESC=$$_GFP_PEEK_DESC; \
 		done; \
@@ -148,7 +148,7 @@ _make_individual_project:
 			$(MAKE) generate_microstate_eval \
 				INDEXES="$(EVAL_INDEXES)" \
 				PERSON_ID=$(PERSON_ID) \
-				MICROSTATE_EVAL_STORE_PATH="./p$(PERSON_ID)/microstates/" \
+				MICROSTATE_EVAL_STORE_PATH="$(PWD)/p$(PERSON_ID)/microstates/" \
 				NORMAL_ONLY_DESC=$$_NORMAL_ONLY_DESC \
 				GFP_PEEK_DESC=$$_GFP_PEEK_DESC; \
 		done; \
