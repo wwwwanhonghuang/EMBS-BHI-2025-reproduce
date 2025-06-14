@@ -1,6 +1,10 @@
 
 PREEPILEPTIC_LENGTH_SEC?=120
 FORCE_REPREPROCESSING?=0
+INITIAL_PCFG_PATH?=../data/grammar.pcfg
+PSR_BINARY_PATH?=../lib/pcfg-cky-inside-outside/bin/phase_convert
+PCFG_ESTIMATOR_BINARY_PATH?=../lib/pcfg-cky-inside-outside/bin/train_pcfg
+
 define MICROSTATE_MAKEFILE_TRAINING_MAKEFILE_ITEM_TEMPLATE
 train-microstate-$(EXPERIMENT_TYPE)-$(GFP_PEEK_DESC)-$(NORMAL_ONLY_DESC):
 	CONFIGURATION_FILE=$$(CWD)/microstates/configurations/microstate_$(EXPERIMENT_TYPE)_$(NORMAL_ONLY_DESC)_$(GFP_PEEK_DESC).json; \\
@@ -31,19 +35,8 @@ signal-to-sequence-$(EXPERIMENT_TYPE)-$(GFP_PEEK_DESC)-$(NORMAL_ONLY_DESC):
 
 endef
 
-define SEQUENCE_SPILTTING_MAKEFILE_ITEM_TEMPLATE
-sequence_spiltting-dev-nogfp-normal_only: \\
-	CONFIGURATION_FILE=$$(CWD)/microstates/configurations/microstate_dev_normal_only_nogfp.json; \\
-	RECORD_FILE=$$(CWD)/microstates/$(PREPROCESSED_FILE_PREFIX)all.edf; \\
-	FLAGS=\"-cf $$$$CONFIGURATION_FILE -pz 120\"; \\
-	cd ../../3.phase_space_reconstruction; \\
-	python dataset_splitting_and_segmentation.py $$$$FLAGS
-
-endef
-
 export MICROSTATE_MAKEFILE_TRAINING_MAKEFILE_ITEM_TEMPLATE
 export SIGNAL_TO_SEQUENCE_MAKEFILE_ITEM_TEMPLATE
-export SEQUENCE_SPILTTING_MAKEFILE_ITEM_TEMPLATE
 
 .PHONY: generate_microstate_dev generate_microstate_eval
 
@@ -203,26 +196,132 @@ _make_individual_project:
 	$(foreach EXPERIMENT_TYPE,$(EXPERIMENT_TYPES),\
 	$(foreach GFP_PEEK_DESC,$(GFP_PEEK_DESCS),\
 	$(foreach NORMAL_ONLY_DESC,$(NORMAL_ONLY_DESCS),\
+	    $(shell mkdir -p p$(PERSON_ID)/sequences/corpus_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)) \
 		$(MAKE) _generate_signal_segmentation_configuration_json \
 		TYPE=$(EXPERIMENT_TYPE) \
 		INDEXES="$(if $(filter dev,$(EXPERIMENT_TYPE)),$(DEV_INDEXES),$(EVAL_INDEXES))" \
 		SAVE_PREFIX="$(MICROSTATE_EVAL_SAVE_PREFIX)" \
 		DATASET_BASE_PATH="$(MICROSTATE_EVAL_DATASET_BASE_PATH)" \
-		STORE_PATH="$(MICROSTATE_EVAL_STORE_PATH)" \
+		CORPUS_STORE_PATH="./microstates/sequences/corpus_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)" \
+		STORE_PATH="./microstates/" \
 		PREPROCESSED_FILE_PREFIX="$(MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX)" \
 		OUTPUT_FILE="p$(PERSON_ID)/sequences/configurations/microstate_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC).json"; \
 	)))
+	@for g in nogfp gfp; do \
+		for n in normal_only all; do \
+			for e in dev eval; do \
+				if [ "$$e" = "dev" ]; then \
+					prefix=$(MICROSTATE_DEV_PREPROCESSED_FILE_PREFIX); \
+				else \
+					prefix=$(MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX); \
+				fi; \
+				echo "sequence_spiltting-$$e-$$g-$$n:" >> p$(PERSON_ID)/Makefile; \
+				echo "	@echo \"Running with $$e $$n $$g\"" >> p$(PERSON_ID)/Makefile; \
+				echo "	CONFIGURATION_FILE=\$$(CWD)/microstates/configurations/microstate_$$e_$$n_$$g.json; \\" >> p$(PERSON_ID)/Makefile; \
+				echo "	RECORD_FILE=\$$(CWD)/microstates/$${prefix}all.edf; \\" >> p$(PERSON_ID)/Makefile; \
+				echo "	FLAGS=\"-cf \$$\$${CONFIGURATION_FILE} -pz 120\"; \\" >> p$(PERSON_ID)/Makefile; \
+				echo "	cd ../../3.phase_space_reconstruction; \\" >> p$(PERSON_ID)/Makefile; \
+				echo "	python dataset_splitting_and_segmentation.py \$$\$${FLAGS}" >> p$(PERSON_ID)/Makefile; \
+				echo "" >> p$(PERSON_ID)/Makefile; \
+			done; \
+		done; \
+	done
+	echo 'sequence_spiltting-all:' >> p$(PERSON_ID)/Makefile
 	for _GFP_PEEK_DESC in nogfp gfp; do \
 		for _NORMAL_ONLY_DESC in normal_only all; do \
 			for _EXPERIMENT_TYPE in dev eval; do \
-				NORMAL_ONLY_DESC=$$_NORMAL_ONLY_DESC; \
-				GFP_PEEK_DESC=$$_GFP_PEEK_DESC; \
-				EXPERIMENT_TYPE=$$_EXPERIMENT_TYPE; \
-				echo "$$SEQUENCE_SPILTTING_MAKEFILE_ITEM_TEMPLATE" >> p$(PERSON_ID)/Makefile; \
+				echo "	\$$(MAKE) sequence_spiltting-$${_EXPERIMENT_TYPE}-$${_GFP_PEEK_DESC}-$${_NORMAL_ONLY_DESC}" >> p$(PERSON_ID)/Makefile; \
 			done; \
 		done; \
 	done;
-
+	@for e in dev eval; do \
+		for g in nogfp gfp; do \
+			for n in normal_only all; do \
+				echo "npy-to-plain-text-$$e-$$g-$$n:" >> p$(PERSON_ID)/Makefile; \
+				echo "	@echo \"Running with $$e $$g $$n\"" >> p$(PERSON_ID)/Makefile; \
+				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "" >> p$(PERSON_ID)/Makefile; \
+				done; \
+		done; \
+	done
+	echo 'npy-to-plain-text-all:' >> p$(PERSON_ID)/Makefile
+	for _GFP_PEEK_DESC in nogfp gfp; do \
+		for _NORMAL_ONLY_DESC in normal_only all; do \
+			for _EXPERIMENT_TYPE in dev eval; do \
+				echo "	\$$(MAKE) npy-to-plain-text-$${_EXPERIMENT_TYPE}-$${_GFP_PEEK_DESC}-$${_NORMAL_ONLY_DESC}" >> p$(PERSON_ID)/Makefile; \
+			done; \
+		done; \
+	done;
+	@for e in dev eval; do \
+		for g in nogfp gfp; do \
+			for n in normal_only all; do \
+				for a in normal pre-epileptic seizure; do \
+					$(MAKE) _make_phase_space_reconstruction_yaml_config \
+						INPUT_FILE=./sequences/corpus_$${e}_$${g}_$${n}/$${a}_integrated_all_d2_s4.txt \
+						OUTPUT_FILE=./sequences/corpus_$${e}_$${g}_$${n}/$${a}_integrated_all_d2_s4_converted.txt \
+						INITIAL_PCFG_PATH=$(INITIAL_PCFG_PATH) \
+						EXPERIMENT_TYPE=$${e} \
+						GFP_PEEK_DESC=$${g} \
+						NORMAL_ONLY_DESC=$${n} \
+						AREA_TYPE=$${a}; \
+				done; \
+			done; \
+		done; \
+	done
+	@for e in dev eval; do \
+		for g in nogfp gfp; do \
+			for n in normal_only all; do \
+				echo "psr_$${e}_$${g}_$${n}:" >> p$(PERSON_ID)/Makefile; \
+				for a in normal pre-epileptic seizure; do \
+					CONFIGURATION_BASE_PATH="./sequences/configurations/psr_$${e}_$${g}_$${n}_$${a}.yaml" ;  \
+					echo "	${PSR_BINARY_PATH} $${CONFIGURATION_BASE_PATH}" >> p$(PERSON_ID)/Makefile; \
+				done; \
+				echo "" >> p$(PERSON_ID)/Makefile; \
+			done; \
+		done; \
+	done
+	@for e in dev eval; do \
+		for g in nogfp gfp; do \
+			for n in normal_only all; do \
+				echo "convert-length-$$e-$$g-$$n:" >> p$(PERSON_ID)/Makefile; \
+				echo "	@echo \"Running with $$e $$g $$n\"" >> p$(PERSON_ID)/Makefile; \
+				echo "	python convert_state_length.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python convert_state_length.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python convert_state_length.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "" >> p$(PERSON_ID)/Makefile; \
+				done; \
+		done; \
+	done
+	mkdir -p p${PERSON_ID}/pcfg/configurations
+	@for e in dev eval; do \
+		for g in nogfp gfp; do \
+			for n in normal_only all; do \
+				$(MAKE) _make_pcfg_training_configuration \
+				INITIAL_PCFG_FILE='$(INITIAL_PCFG_PATH)' \
+				INPUT_FILE=./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_converted.txt \
+				VAL_SENTENCES_PATH=./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_converted_val.txt \
+				TRAIN_SENTENCES_PATH=./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_converted_train.txt \
+				EXPERIMENT_TYPE=$${e} \
+				GFP_PEEK_DESC=$${g} \
+				NORMAL_ONLY_DESC=$${n}; \
+			done; \
+		done; \
+	done
+	@for e in dev eval; do \
+		for g in nogfp gfp; do \
+			for n in normal_only all; do \
+				echo "train_pcfg_$${e}_$${g}_$${n}:" >> p$(PERSON_ID)/Makefile; \
+				CONFIGURATION_BASE_PATH="./pcfg/configurations/train_$${e}_$${g}_$${n}.yaml" ;  \
+				echo "	${PCFG_ESTIMATOR_BINARY_PATH} $${CONFIGURATION_BASE_PATH}" >> p$(PERSON_ID)/Makefile; \
+				echo "" >> p$(PERSON_ID)/Makefile; \
+			done; \
+		done; \
+	done
 
 generate_microstate_dev:
 	@$(MAKE) _generate_microstate_training_configuration_json \
@@ -270,3 +369,20 @@ signal-to-sequence-dev-nogfp-normal_only:
 
 clean-all-projects-generations-only:
 	find p*/ -type f \( -name '*.json' -o -name 'Makefile' -o -name '*.yaml' \) -delete
+
+_make_phase_space_reconstruction_yaml_config:
+	@INPUT_FILE='$(INPUT_FILE)' \
+	OUTPUT_FILE='$(OUTPUT_FILE)' \
+	INITIAL_PCFG_PATH='$(INITIAL_PCFG_PATH)' \
+	EXPERIMENT_TYPE='$(EXPERIMENT_TYPE)' \
+	GFP_PEEK_DESC='$(GFP_PEEK_DESC)' \
+	NORMAL_ONLY_DESC='$(NORMAL_ONLY_DESC)' \
+	AREA_TYPE='$(AREA_TYPE)' \
+	envsubst < phase_space_reconstruction.yaml.in > p$(PERSON_ID)/sequences/configurations/psr_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)_$(AREA_TYPE).yaml
+
+_make_pcfg_training_configuration:
+	@INITIAL_PCFG_FILE='$(INITIAL_PCFG_FILE)' \
+	INPUT_FILE='$(INPUT_FILE)' \
+	VAL_SENTENCES_PATH='$(VAL_SENTENCES_PATH)' \
+	TRAIN_SENTENCES_PATH='$(TRAIN_SENTENCES_PATH)' \
+	envsubst < training_configuration.yaml.in > p$(PERSON_ID)/pcfg/configurations/train_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)_$(AREA_TYPE).yaml
