@@ -4,22 +4,49 @@ all: train_microstate_dev
 FORCE_REPREPROCESSING ?= 0
 PREEPILEPTIC_LENGTH_SEC ?= 120
 
-train-microstate-dev-gfp-normal-only:
-	@echo "Running microstate training (Dev dataset) with:"
-	@echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)"
-	@echo "  PREEPILEPTIC_LENGTH_SEC=$(PREEPILEPTIC_LENGTH_SEC)"
-	@echo "  CONFIGURATION_FILE=$(CONFIGURATION_FILE)"
-	@FLAGS="--pre_epileptic_zone $(PREEPILEPTIC_LENGTH_SEC) --database_index_configuration $(CONFIGURATION_FILE) --use_gfp"; \
+train-microstate-test-no-gfp-no-normal-only:
+	CONFIGURATION_FILE=./configs/config-all-person-microstate-test.json ; \
+        FLAGS="--pre_epileptic_zone $(PREEPILEPTIC_LENGTH_SEC) --database_index_configuration $$CONFIGURATION_FILE"; \
+        echo "Running microstate training (Test dataset) with:" ; \
+        echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)" ; \
+        echo "  PREEPILEPTIC_LENGTH_SEC=$(PREEPILEPTIC_LENGTH_SEC)" ; \
+        echo "  CONFIGURATION_FILE=$$CONFIGURATION_FILE" ; \
+        if [ "$(FORCE_REPREPROCESSING)" -eq 1 ]; then \
+                FLAGS="$$FLAGS --force_repreprocessing"; \
+        fi; \
+        python microstate_extraction.py $$FLAGS --no_normal_only
+
+
+
+train-microstate-dev-no-gfp-no-normal-only:
+	CONFIGURATION_FILE=./configs/config-all-person-microstate-dev.json ; \
+        FLAGS="--pre_epileptic_zone $(PREEPILEPTIC_LENGTH_SEC) --database_index_configuration $$CONFIGURATION_FILE"; \
+        echo "Running microstate training (Dev dataset) with:" ; \
+        echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)" ; \
+        echo "  PREEPILEPTIC_LENGTH_SEC=$(PREEPILEPTIC_LENGTH_SEC)" ; \
+        echo "  CONFIGURATION_FILE=$$CONFIGURATION_FILE" ; \
+        if [ "$(FORCE_REPREPROCESSING)" -eq 1 ]; then \
+                FLAGS="$$FLAGS --force_repreprocessing"; \
+        fi; \
+        python microstate_extraction.py $$FLAGS --no_normal_only
+
+train-microstate-dev-gfp-no-normal-only:
+	CONFIGURATION_FILE=./configs/config-all-person-microstate-dev.json ; \
+	FLAGS="--pre_epileptic_zone $(PREEPILEPTIC_LENGTH_SEC) --database_index_configuration $$CONFIGURATION_FILE --use_gfp"; \
+	echo "Running microstate training (Dev dataset) with:" ; \
+	echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)" ; \
+	echo "  PREEPILEPTIC_LENGTH_SEC=$(PREEPILEPTIC_LENGTH_SEC)" ; \
+	echo "  CONFIGURATION_FILE=$$CONFIGURATION_FILE" ; \
 	if [ "$(FORCE_REPREPROCESSING)" -eq 1 ]; then \
 		FLAGS="$$FLAGS --force_repreprocessing"; \
 	fi; \
-	python microstate_extraction.py $$FLAGS
+	python microstate_extraction.py $$FLAGS --no_normal_only
 
 train-microstate-dev-nogfp-normal-only:
 	CONFIGURATION_FILE=./configs/config-all-person-microstate-dev.json	;\
 	FLAGS="--pre_epileptic_zone $(PREEPILEPTIC_LENGTH_SEC) --database_index_configuration $$CONFIGURATION_FILE"; \
 	echo "Running microstate training (Dev dataset, non-gfp, normal-only) with:" ;\
-	echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)" ;\
+	echo "  FORCE_REPREPROCESSING=$(FORCE_REPREPROCESSING)" ; \
 	echo "  PREEPILEPTIC_LENGTH_SEC=$(PREEPILEPTIC_LENGTH_SEC)" ;\
 	echo "  CONFIGURATION_FILE=$$CONFIGURATION_FILE" ;\
 	if [ "$(FORCE_REPREPROCESSING)" -eq 1 ]; then \
