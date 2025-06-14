@@ -1,0 +1,8 @@
+phase_convert:
+  grammar_file: "${INITIAL_PCFG_PATH}"
+  input: "${INPUT_FILE}"
+  output: "${OUTPUT_FILE}"
+~                                                                               
+~                                                                               
+~                                                                               
+~                            
