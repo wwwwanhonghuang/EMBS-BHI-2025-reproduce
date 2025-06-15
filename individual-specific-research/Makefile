@@ -195,19 +195,21 @@ _make_individual_project:
 		done; \
 	done;
 	mkdir -p p$(PERSON_ID)/sequences/configurations	
+# SAVE_PREFIX="$(subst ],\\\\], $(subst [,\\\\[, [seg-$(if $(filter dev,$(EXPERIMENT_TYPE)),$(MICROSTATE_DEV_SAVE_PREFIX),$(MICROSTATE_EVAL_SAVE_PREFIX))]))" \
+
 	$(foreach EXPERIMENT_TYPE,$(EXPERIMENT_TYPES),\
 	$(foreach GFP_PEEK_DESC,$(GFP_PEEK_DESCS),\
 	$(foreach NORMAL_ONLY_DESC,$(NORMAL_ONLY_DESCS),\
 	    $(shell mkdir -p p$(PERSON_ID)/sequences/corpus_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)) \
 		$(MAKE) _generate_signal_segmentation_configuration_json \
 		TYPE=$(EXPERIMENT_TYPE) \
-		INDEXES="$(if $(filter dev,$(EXPERIMENT_TYPE)),$(DEV_INDEXES),$(EVAL_INDEXES))" \
-		SAVE_PREFIX="$(MICROSTATE_EVAL_SAVE_PREFIX)" \
+		INDEXES="[$(if $(filter dev,$(EXPERIMENT_TYPE)),$(DEV_INDEXES),$(EVAL_INDEXES))]" \
+		SAVE_PREFIX="sequence_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)" \
 		DATASET_BASE_PATH="$(MICROSTATE_EVAL_DATASET_BASE_PATH)" \
-		CORPUS_STORE_PATH="./microstates/sequences/corpus_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)" \
-		STORE_PATH="./microstates/" \
-		PREPROCESSED_FILE_PREFIX="$(MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX)" \
-		OUTPUT_FILE="p$(PERSON_ID)/sequences/configurations/microstate_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC).json"; \
+		CORPUS_STORE_PATH="$(PWD)/p$(PERSON_ID)/sequences/corpus_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)" \
+		STORE_PATH="$(PWD)/p$(PERSON_ID)/sequences/" \
+		PREPROCESSED_FILE_PREFIX="$(if $(filter dev,$(EXPERIMENT_TYPE)),$(MICROSTATE_DEV_PREPROCESSED_FILE_PREFIX),$(MICROSTATE_EVAL_PREPROCESSED_FILE_PREFIX))" \
+		OUTPUT_FILE="$(PWD)/p$(PERSON_ID)/sequences/configurations/microstate_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC).json"; \
 	)))
 	@for g in nogfp gfp; do \
 		for n in normal_only all; do \
@@ -219,7 +221,7 @@ _make_individual_project:
 				fi; \
 				echo "sequence_spiltting-$$e-$$g-$$n:" >> p$(PERSON_ID)/Makefile; \
 				echo "	@echo \"Running with $$e $$n $$g\"" >> p$(PERSON_ID)/Makefile; \
-				echo "	CONFIGURATION_FILE=\$$(CWD)/microstates/configurations/microstate_$$e_$$n_$$g.json; \\" >> p$(PERSON_ID)/Makefile; \
+				echo "	CONFIGURATION_FILE=\$$(CWD)/sequences/configurations/microstate_$${e}_$${g}_$${n}.json; \\" >> p$(PERSON_ID)/Makefile; \
 				echo "	RECORD_FILE=\$$(CWD)/microstates/$${prefix}all.edf; \\" >> p$(PERSON_ID)/Makefile; \
 				echo "	FLAGS=\"-cf \$$\$${CONFIGURATION_FILE} -pz 120\"; \\" >> p$(PERSON_ID)/Makefile; \
 				echo "	cd ../../3.phase_space_reconstruction; \\" >> p$(PERSON_ID)/Makefile; \
@@ -329,7 +331,7 @@ generate_microstate_dev:
 	@$(MAKE) _generate_microstate_training_configuration_json \
 		TYPE=dev \
 		INDEXES="$(INDEXES)" \
-		SAVE_PREFIX="$(MICROSTATE_DEV_SAVE_PREFIX)" \
+		SAVE_PREFIX=$(subst, [, \\[ [$(MICROSTATE_DEV_SAVE_PREFIX)])  \
 		DATASET_BASE_PATH="$(MICROSTATE_DEV_DATASET_BASE_PATH)" \
 		STORE_PATH="$(MICROSTATE_DEV_STORE_PATH)" \
 		PREPROCESSED_FILE_PREFIX="$(MICROSTATE_DEV_PREPROCESSED_FILE_PREFIX)" \
