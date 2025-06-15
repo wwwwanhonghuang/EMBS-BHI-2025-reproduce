@@ -23,11 +23,13 @@ python microstate_extraction.py $$$$FLAGS \
   
 endef
 
+
 define SIGNAL_TO_SEQUENCE_MAKEFILE_ITEM_TEMPLATE
 signal-to-sequence-$(EXPERIMENT_TYPE)-$(GFP_PEEK_DESC)-$(NORMAL_ONLY_DESC):
-	MICROSTATE_FILE=$$(CWD)/microstates/[$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)]all.npy; \\
-	RECORD_FILE=$$(CWD)/microstates/[$(EXPERIMENT_TYPE)_preprocessed]all.edf; \\
-	FLAGS="--record_file_path $$$$RECORD_FILE --microstate_file_path $$$$MICROSTATE_FILE --sequence_file_save_path sequences/sequence_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC).npy"; \\
+	MICROSTATE_FILE=$$$$(find "$$(CWD)/microstates" -type f -regextype posix-extended -regex ".*/\[\[${EXPERIMENT_TYPE}_${GFP_PEEK_DESC}_${NORMAL_ONLY_DESC}\]\]person_all_states4_gev_0\.[0-9]+\.npy" | sort | head -n 1) ; \\
+	echo "Find microstate file $$$$MICROSTATE_FILE" ; \\
+	RECORD_FILE=$$(CWD)/microstates/[$(EXPERIMENT_TYPE)_preprocessed]pall.edf; \\
+	FLAGS="--record_file_path $$$$RECORD_FILE --microstate_file_path $$$$MICROSTATE_FILE --sequence_file_save_path $$(CWD)/sequences/sequence_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC).npy"; \\
 	cd ../../2.microstate_training ; \\
 	python signal_to_microstate_sequence.py $$$$FLAGS 2>&1 | \\
 	tee /dev/tty | \\
@@ -239,12 +241,12 @@ _make_individual_project:
 			for n in normal_only all; do \
 				echo "npy-to-plain-text-$$e-$$g-$$n:" >> p$(PERSON_ID)/Makefile; \
 				echo "	@echo \"Running with $$e $$g $$n\"" >> p$(PERSON_ID)/Makefile; \
-				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
-				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
-				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
-				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
-				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
-				echo "	python sentence_plain_text_encoder.py --file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path $(PWD)/sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path $(PWD)/sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path $(PWD)/sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path $(PWD)/sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/seizure_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path $(PWD)/sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
+				echo "	python sentence_plain_text_encoder.py --file_path $(PWD)/sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4_repetitions.npy --output_file_path ./sequences/corpus_$${e}_$${g}_$${n}/pre-epileptic_integrated_all_d2_s4_repetitions.txt \\" >> p$(PERSON_ID)/Makefile ;\
 				echo "" >> p$(PERSON_ID)/Makefile; \
 				done; \
 		done; \
@@ -361,11 +363,11 @@ _generate_microstate_training_makefile_items:
 _generate_signal_to_sequence_items:
 	@echo "$$SIGNAL_TO_SEQUENCE_MAKEFILE_ITEM_TEMPLATE" >> p$(PERSON_ID)/Makefile
 
-signal-to-sequence-dev-nogfp-normal_only:
-	MICROSTATE_FILE=$(CWD)/microstates/[dev_all_nogfp]all.npy; \
-	RECORD_FILE=$(CWD)/microstates/[dev_preprocessed]all.edf; \
-	FLAGS="--record_file_path $$RECORD_FILE --microstate_file_path $$MICROSTATE_FILE --sequence_file_save_path sequences/sequence_dev_nogfp_normal_only.npy"; \
-	cd ../../2.microstate_training ; python signal_to_microstate_sequence.py $$FLAGS  
+# signal-to-sequence-dev-nogfp-normal_only:
+# 	MICROSTATE_FILE=$(CWD)/microstates/[dev_all_nogfp]all.npy; \
+# 	RECORD_FILE=$(CWD)/microstates/[dev_preprocessed]all.edf; \
+# 	FLAGS="--record_file_path $$RECORD_FILE --microstate_file_path $$MICROSTATE_FILE --sequence_file_save_path sequences/sequence_dev_nogfp_normal_only.npy"; \
+# 	cd ../../2.microstate_training ; python signal_to_microstate_sequence.py $$FLAGS  
 
 clean-all-projects-generations-only:
 	find p*/ -type f \( -name '*.json' -o -name 'Makefile' -o -name '*.yaml' \) -delete
