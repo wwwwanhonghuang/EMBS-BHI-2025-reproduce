@@ -1,5 +1,3 @@
-import numpy as np
-
 
 def calculate_metrics(conf_matrix):
     """

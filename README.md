@@ -1,3 +1,6 @@
+> [!IMPORTANT]  
+> Repository Under Developing.
+
 ## 1. Environment Preparation
 
 It may install a virtual environment for better manage dependencies.
@@ -85,6 +88,30 @@ $ conda activate embc2025 requirement.txt
 ### 2.6 <span style="color: red">**Step 6** </span>**Informatics Features and Tree-structural Features Evaluation**
 
 + **Link**: [6.evaluation](./6.evaluation)
+
++ **Contract**
+
+  + **Input**
+    + Possibility Context-Free Grammar File
+    + Time-delay method reconstructed brain state sequences
+
+  + **Output**
+    + Syntax trees
+    + Statistical features of syntax trees
+
+
+
+### 2.7 <span style="color: red">**Step 7** </span>**Seizure Prediction**
+
++ **Link**: [7.seizure_prediction](./7.seizure_prediction)
+
++ **Contract**
+
+  + **Input**
+    + Syntax trees
+
+  + **Output**
+    + Seizure Prediction Results
 
 + **Contract**
 

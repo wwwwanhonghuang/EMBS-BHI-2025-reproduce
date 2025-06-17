@@ -16,7 +16,34 @@ global end_time
 start_time = -1
 end_time = -1
 
+global dataset_base_path
+global dataset_name
+global record_indexes
+global preprocessing_pipeline
+global post_merge_pipeline
+global microstate_search_range
+global n_iters
+global stop_delta_threshold
+global store_4_microstates
+global save_preprocessed_data
+global save_segmentation
+global load_preprocessed
+global store_base_path
+
 def get_arguments(record_configuration):
+    global dataset_base_path
+    global dataset_name
+    global record_indexes
+    global preprocessing_pipeline
+    global post_merge_pipeline
+    global microstate_search_range
+    global n_iters
+    global stop_delta_threshold
+    global store_4_microstates
+    global save_preprocessed_data
+    global save_segmentation
+    global load_preprocessed
+    global store_base_path
     dataset_base_path = record_configuration['extraction_process']['dataset_base_path']
     dataset_name = record_configuration['extraction_process']['database_name']
     record_indexes = record_configuration['indexes']
