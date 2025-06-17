@@ -1,4 +1,4 @@
-[!Warning] Repository Under Developing.
+[!Warn] Repository Under Developing.
 
 ## 1. Environment Preparation
 
