@@ -28,9 +28,9 @@ A configuration file may seems like:
 ``` json
 {
     "indexes":{
-	"all": [[11, 1], [11, 2], [11, 3], [11, 4], [12, 1], [12, 2], [13, 1], [13, 2], [13, 3], [13, 4], [14, 1], [15, 1], [15, 2], [15, 3], [15,4 ]]
+	"all": [[11, 1], [11, 2], [11, 3], [12, 1], [13, 1], [13, 2], [13, 3], [15, 1], [15, 2], [15, 3]]
     },
-    "save_prefix":"[prep-asr]",
+    "save_prefix":"[normal-only-prep-asr]",
     "preprocessings":{
         "pipeline":[
             ["drop_channels", {"ch_names": ["ECG EKG", "Manual"], "on_missing": "warn"}], 
@@ -51,7 +51,8 @@ A configuration file may seems like:
         "post_merge_pipeline": [["average_reference", {}], ["min_max_nor", {}]]
     },
     "extraction_process":{
-        "dataset_base_path": "../data",
+        "load_preprocessed": true,
+        "dataset_base_path": "../data/dataset",
         "database_name": "epileptic_eeg_dataset",
         "number-microstate-least": 4,
         "number-microstate-most": 4,
@@ -71,7 +72,8 @@ A configuration file may seems like:
 + `extraction_process` specify the detailed training setting. It will respectively train from `number-microstate-least` microstates to `number-microstate-most` microstates. And stop at a certain $k$, $number-microstate-least\le  k \le number-microstate-most$, if the evaluation metrics (i.e., global explain variation) change less than `stop-threshold`. And one that exhibit the best GEV will be saved.
 When `store-microstates-n4` is enabled, even though the `4`-component microstates is not exhibit the best GEV, it will still be stored.
 
-
++ There are two configurations under the folder `configs`: `config-all-person-microstate-dev.json` and `config-all-person-microstate-retained.json`. The formmer is configured for training microstates on a large part of dataset. While the rest will be retained. Tha latter json responsible for extract microstate from the retained records,
+which serverd as the test data.
 
 ## 2.2 Run the script
 
@@ -84,3 +86,6 @@ $ python microstate_extraction.py --database_index_configuration ./configs/confi
 The script utilize default configuration file `./configs/config-all-person-microstate.json`
 It can use `python microstate_extraction.py --database_index_configuration <path-to-config-file>`  to run with a specific configuration file.
 
+The script default to load preprocess MNE Raw files if exist. Add `--force_repreprocessing` to forcely reperform preprocessing. Or change the `load_preprocessed` item in the correspondent `json` configuration file.
+
+Alternatively `bash 2.2_train_microstate_on_dev.sh`. 

@@ -1,0 +1,9 @@
+record:
+    raw_file_path: "../data/microstates/epileptic_eeg_dataset/[test-preprocessed_prep_asr]pall.edf"
+
+microstates:
+    microstate_file_path: "../data/microstates/epileptic_eeg_dataset/[[prep-asr]]person_all_states4_gev_0.6283426683553615.npy"
+
+storage:
+    store_path: "../data/test"
+    store_file_name: "test-segmentation.npy"

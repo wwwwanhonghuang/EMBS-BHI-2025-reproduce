@@ -1,0 +1,29 @@
+# Device configuration
+cuda_device:
+  # Default CUDA device ID
+  use_device_id: 0
+  # List of available devices and their properties
+  devices:
+    - id: 0
+      name: "NVIDIA A6000"
+      compute_capability: "8.6"
+      memory: "48GB"
+    - id: 1
+      name: "NVIDIA A6000"
+      compute_capability: "8.6"
+      memory: "48GB"  
+
+# Buffer configuration
+cky_buffer:
+  size:
+    S: 14
+    max_seq_len: 10
+
+
+grammar:
+  file_path: ../../data/pcfg/grammar_demo.pcfg
+
+# Kernel configuration
+kernel:
+  threads_per_block: 16
+  block_size: 256

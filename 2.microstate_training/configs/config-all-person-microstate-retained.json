@@ -1,0 +1,41 @@
+{
+    "indexes":{
+	"all": [ [11, 4],  [12, 2], [13, 4], [14, 1], [15,4]]
+    },
+    "save_prefix":"[test-prep-asr]",
+    "microstates":{
+        "microstate_file_path": "../data/microstates/epileptic_eeg_dataset/[[prep-asr]]person_all_states4_gev_0.6283426683553615.npy"
+    },
+    "preprocessings":{
+        "pipeline":[
+            ["drop_channels", {"ch_names": ["ECG EKG", "Manual"], "on_missing": "warn"}], 
+            ["prep", {
+            "montage": "standard_1020",
+            "prep_params":{
+                "ref_chs": "eeg",
+                "reref_chs": "eeg",
+                "line_freqs":[]
+            },
+            "reference_args": {
+                "correlation_secs": 1.0, 
+                "correlation_threshold": 0.4, 
+                "frac_bad": 0.01
+            }
+            }],
+        ["asr", {"cutoff": 30}], ["average_reference", {}], ["min_max_nor", {}]],
+        "post_merge_pipeline": [["average_reference", {}], ["min_max_nor", {}]]
+    },
+    "extraction_process":{
+        "dataset_base_path": "../data/dataset",
+        "database_name": "epileptic_eeg_dataset",
+        "number-microstate-least": 4,
+        "number-microstate-most": 4,
+        "kmeans-iterations": 200,
+        "stop-threshold": 0.025,
+        "store-microstates-n4": true,
+        "store-preprocessed": true,
+        "store-segmentation": true,
+        "store-path": "../data/microstates/epileptic_eeg_dataset/",
+        "preprocessed_file_prefix": "[test-preprocessed_prep_asr]"
+    }
+}

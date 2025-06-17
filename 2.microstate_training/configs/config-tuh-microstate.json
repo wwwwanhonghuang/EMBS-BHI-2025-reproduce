@@ -1,0 +1,40 @@
+{
+    "indexes":{
+	"all": [["dev", 0], ["dev", 1], ["dev", 2], ["dev", 3], ["dev", 4], ["dev", 5], ["dev", 6], ["dev", 7], ["dev", 8], 
+    ["dev", 9], ["dev", 10], ["dev", 11], ["dev", 12], ["dev", 13], ["dev", 14], ["dev", 15], ["dev", 16], ["dev", 17],
+    ["dev", 18], ["dev", 19],  ["dev", 20]]
+    },
+    "save_prefix":"[prep-asr]",
+    "preprocessings":{
+        "pipeline":[
+            ["drop_channels", {"ch_names": ["ECG EKG", "Manual"], "on_missing": "warn"}], 
+            ["prep", {
+            "montage": "standard_1020",
+            "prep_params":{
+                "ref_chs": "eeg",
+                "reref_chs": "eeg",
+                "line_freqs":[]
+            },
+            "reference_args": {
+                "correlation_secs": 1.0, 
+                "correlation_threshold": 0.4, 
+                "frac_bad": 0.01
+            }
+            }],
+        ["asr", {"cutoff": 30}], ["average_reference", {}], ["min_max_nor", {}]],
+        "post_merge_pipeline": [["average_reference", {}], ["min_max_nor", {}]]
+    },
+    "extraction_process":{
+        "dataset_base_path": "../data/dataset",
+        "database_name": "tuh_seizure_dataset",
+        "number-microstate-least": 4,
+        "number-microstate-most": 4,
+        "kmeans-iterations": 200,
+        "stop-threshold": 0.025,
+        "store-microstates-n4": true,
+        "store-preprocessed": true,
+        "store-segmentation": true,
+        "store-path": "../data/microstates/tuh_seizure_dataset/",
+        "preprocessed_file_prefix": "[preprocessed_prep_asr]"
+    }
+}

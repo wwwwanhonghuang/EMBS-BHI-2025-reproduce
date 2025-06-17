@@ -1,0 +1,12 @@
+{
+    "dataset_name": "epileptic_eeg_dataset",
+    "sids": ["all"],
+    "merged_record_ids": [[[11, 4],  [12, 2], [13, 4], [14, 1], [15,4]]],
+    "microstate_filename_form": "\\[test-exp4-seg\\-\\[prep\\-asr\\]\\]person_#{sid}_states4_gev_.*",
+    "delay": 2,
+    "n_states": 4,
+    "corpus_storage_base_path": "../data/test-exp4/recurrence_sentences/epileptic_eeg_dataset",
+    "microstate_storage_base_path": "../data/microstates/epileptic_eeg_dataset",
+    "cut": [2, 4096],
+    "dataset_base_path": "../data/dataset"
+}

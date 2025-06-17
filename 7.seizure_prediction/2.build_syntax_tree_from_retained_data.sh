@@ -1,0 +1,7 @@
+INSIDE_OUTSIDE_ALG_PROGRAM_BASE_PATH=../lib/pcfg-cky-inside-outside
+make -C $INSIDE_OUTSIDE_ALG_PROGRAM_BASE_PATH syntax_analysis -j
+SYNTAX_ANALYSIS_BINARY=$INSIDE_OUTSIDE_ALG_PROGRAM_BASE_PATH/bin/syntax_analysis
+
+$SYNTAX_ANALYSIS_BINARY configs/syntax_analysis_configurations/config_normal.yaml
+$SYNTAX_ANALYSIS_BINARY configs/syntax_analysis_configurations/config_preepileptic.yaml
+$SYNTAX_ANALYSIS_BINARY configs/syntax_analysis_configurations/config_seizure.yaml

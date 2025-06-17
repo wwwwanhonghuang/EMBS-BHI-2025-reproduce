@@ -1,0 +1,19 @@
+main:
+  grammar_file: "../data/pcfg/grammar.pcfg"
+  input:  "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/normal_integrated_all_d2_s4_converted_train_train.txt"
+  log_intervals: -1
+  log_path: "data/logs/"
+  log_f:
+    enabled: true
+    intervals: 10000
+  log_warning_in_training: false
+  batch_size_for_parameter_update: -1
+  split_data:
+    enabled: false
+    val_dataset_path: "../../data/recurrence_sentences/epileptic_eeg_dataset/validate_sentences.txt" 
+    train_dataset_path: "../../data/recurrence_sentences/epileptic_eeg_dataset/train_sentences.txt"
+    train_fraction: 0.8
+  validation_file: "../data/recurrence_sentences/epileptic_eeg_dataset/sentence_converted/normal_integrated_all_d2_s4_converted_train_validation.txt"
+  n_epochs: 10
+  limit_n_sentences: -1
+  validation_only: false

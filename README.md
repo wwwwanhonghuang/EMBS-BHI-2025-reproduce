@@ -113,3 +113,31 @@ $ conda activate embc2025 requirement.txt
   + **Output**
     + Seizure Prediction Results
 
++ **Contract**
+
+  + **Input**
+    + Possibility Context-Free Grammar File
+    + Time-delay method reconstructed brain state sequences
+
+  + **Output**
+    + Syntax trees
+    + Statistical features of syntax trees
+
+
+
+### 2.7 <span style="color: red">**Step 7** </span>**Seizure Prediction**
+
++ **Link**: [7.seizure_prediction](./7.seizure_prediction)
+
++ **Contract**
+
+  + **Input**
+    + Syntax trees
+
+  + **Output**
+    + Seizure Prediction Results
+
+
+
+## Current Problems
+1. Float precision of pcfg rule possibility.
