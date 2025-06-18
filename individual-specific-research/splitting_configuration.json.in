@@ -2,7 +2,7 @@
     "dataset_name": "epileptic_eeg_dataset",
     "sids": ["all"],
     "merged_record_ids": $INDEXES,
-    "microstate_filename_form": "${SAVE_PREFIX}person_#{sid}_states4_gev_.*",
+    "microstate_filename_form": "${SAVE_PREFIX}.*",
     "delay": 2,
     "n_states": 4,
     "corpus_storage_base_path": "${CORPUS_STORE_PATH}",
