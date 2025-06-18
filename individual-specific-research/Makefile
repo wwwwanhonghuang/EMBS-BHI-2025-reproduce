@@ -324,7 +324,7 @@ _make_individual_project:
 	@for e in dev; do \
 		for g in nogfp gfp; do \
 			for n in normal_only all; do \
-				mkdir $(PWD)/p${PERSON_ID}/pcfg/logs ; \
+				mkdir -p $(PWD)/p${PERSON_ID}/pcfg/$${e}_$${g}_$${n}/logs ; \
 				$(MAKE) _make_pcfg_training_configuration \
 				INITIAL_PCFG_FILE='$(INITIAL_PCFG_PATH)' \
 				INPUT_FILE=$(PWD)/p${PERSON_ID}/sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_converted.txt \
@@ -332,7 +332,7 @@ _make_individual_project:
 				TRAIN_SENTENCES_PATH=$(PWD)/p${PERSON_ID}/sequences/corpus_$${e}_$${g}_$${n}/normal_integrated_all_d2_s4_converted_train.txt \
 				EXPERIMENT_TYPE=$${e} \
 				GFP_PEEK_DESC=$${g} \
-				LOG_PATH=$(PWD)/p${PERSON_ID}/pcfg/logs \
+				LOG_PATH=$(PWD)/p${PERSON_ID}/pcfg/$${e}_$${g}_$${n}/logs \
 				NORMAL_ONLY_DESC=$${n}; \
 			done; \
 		done; \
@@ -343,6 +343,7 @@ _make_individual_project:
 				echo "train-pcfg-$${e}-$${g}-$${n}:" >> p$(PERSON_ID)/Makefile; \
 				CONFIGURATION_BASE_PATH="$(PWD)/p${PERSON_ID}/pcfg/configurations/train_$${e}_$${g}_$${n}.yaml" ;  \
 				echo "	${PCFG_ESTIMATOR_BINARY_PATH} $${CONFIGURATION_BASE_PATH}" >> p$(PERSON_ID)/Makefile; \
+				echo "	mv $(PWD)/p${PERSON_ID}/pcfg/$${e}_$${g}_$${n}/logs/*.pcfg $(PWD)/p${PERSON_ID}/pcfg/$${e}_$${g}_$${n}/" ; \
 				echo "" >> p$(PERSON_ID)/Makefile; \
 			done; \
 		done; \
@@ -355,6 +356,39 @@ _make_individual_project:
 			done; \
 		done; \
 	done;
+	for g in nogfp gfp; do \
+		for n in normal_only all; do \
+			for e in dev; do \
+				GRAMMAR_FILE=$$(find "$(PWD)/p${PERSON_ID}/pcfg/$${e}_$${g}_$${n}/" -name "*.pcfg") ; \
+				for __GRAMMAR_FILE in $$GRAMMAR_FILE; do \
+					mkdir -p $(PWD)/p${PERSON_ID}/syntax_analysis/$${e}_$${g}_$${n} ; \
+					GRAMMAR_FILE_NAME="$$(basename "$$__GRAMMAR_FILE")" ; \
+					sed -E 's/\[[0-9]+\]\s+//g; s/\s+->\s+/->/g' $${__GRAMMAR_FILE} > $(PWD)/p${PERSON_ID}/syntax_analysis/$${e}_$${g}_$${n}/$${GRAMMAR_FILE_NAME} ; \
+				done; \
+			done ; \
+		done; \
+	done;
+	mkdir -p p${PERSON_ID}/syntax_analysis/configurations
+	@for e in dev; do \
+		for g in nogfp gfp; do \
+			for n in normal_only all; do \
+				for a in normal seizure pre-epileptic; do \
+					mkdir -p $(PWD)/p${PERSON_ID}/syntax_analysis/$${e}_$${g}_$${n} ; \
+					$(MAKE) _make_syntax_analysis_configuration \
+					GRAMMAR_FILE=$$(find "$(PWD)/p${PERSON_ID}/syntax_analysis/$${e}_$${g}_$${n}/" -name "*.pcfg" | sort -r | head -n 1)  \
+					INPUT_FILE=$(PWD)/p${PERSON_ID}/sequences/corpus_$${e}_$${g}_$${n}/$${a}_integrated_all_d2_s4_converted.txt \
+					REPETITION_FILE=$(PWD)/p${PERSON_ID}/sequences/corpus_$${e}_$${g}_$${n}/$${a}_integrated_all_d2_s4_repetition.txt \
+					EXPERIMENT_TYPE=$${e} \
+					GFP_PEEK_DESC=$${g} \
+					LOG_PATH=$(PWD)/p${PERSON_ID}/syntax_analysis/$${e}_$${g}_$${n}/logs \
+					REPORT_PATH=$(PWD)/p${PERSON_ID}/syntax_analysis/$${e}_$${g}_$${n}/report \
+					TREE_STORE_PATH=$(PWD)/p${PERSON_ID}/syntax_analysis/$${e}_$${g}_$${n}/serialized_trees/$${a} \
+					NORMAL_ONLY_DESC=$${n} \
+					AREA_TYPE=$${a}; \
+				done; \
+			done; \
+		done; \
+	done
 
 generate_microstate_dev:
 	@$(MAKE) _generate_microstate_training_configuration_json \
@@ -419,3 +453,12 @@ _make_pcfg_training_configuration:
 	VAL_SENTENCES_PATH='$(VAL_SENTENCES_PATH)' \
 	TRAIN_SENTENCES_PATH='$(TRAIN_SENTENCES_PATH)' \
 	envsubst < training_configuration.yaml.in > p$(PERSON_ID)/pcfg/configurations/train_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC).yaml
+
+_make_syntax_analysis_configuration:
+	@GRAMMAR_FILE='$(GRAMMAR_FILE)' \
+	INPUT_FILE='$(INPUT_FILE)' \
+	REPETITION_FILE='$(REPETITION_FILE)' \
+	LOG_PATH='$(LOG_PATH)' \
+	REPORT_PATH='$(REPORT_PATH)' \
+	TREE_STORE_PATH='$(TREE_STORE_PATH)' \
+	envsubst < syntax_analysis_configuration.yaml.in > p$(PERSON_ID)/syntax_analysis/configurations/syntax_analysis_$(EXPERIMENT_TYPE)_$(GFP_PEEK_DESC)_$(NORMAL_ONLY_DESC)_$(AREA_TYPE).yaml

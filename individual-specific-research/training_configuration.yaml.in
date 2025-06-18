@@ -2,18 +2,18 @@ main:
   grammar_file: "${INITIAL_PCFG_FILE}"
   input:  "${INPUT_FILE}"
   log_intervals: -1
-  log_path: "data/logs/"
+  log_path: "${LOG_PATH}"
   log_f:
     enabled: true
     intervals: 10000
   log_warning_in_training: false
   batch_size_for_parameter_update: -1
   split_data:
-    enabled: false
+    enabled: true
     val_dataset_path: "${VAL_SENTENCES_PATH}" 
     train_dataset_path: "${TRAIN_SENTENCES_PATH}"
     train_fraction: 0.8
   validation_file: "${VAL_SENTENCES_PATH}"
-  n_epochs: 8
+  n_epochs: 6
   limit_n_sentences: -1
   validation_only: false
